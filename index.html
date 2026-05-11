@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>렉스김어학원 간담회 예약</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase App & Database SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <!-- Excel Export Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .time-slot { transition: all 0.2s; }
+        .reserved { background-color: #ef4444; color: white; cursor: not-allowed; }
+        .selected { background-color: #3b82f6; color: white; }
+        .available { background-color: #f3f4f6; cursor: pointer; }
+        .available:hover { background-color: #d1d5db; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- 헤더 -->
+    <header class="bg-blue-900 text-white p-4 shadow-lg flex justify-between items-center">
+        <h1 class="text-xl font-bold">렉스김어학원 학부모 간담회</h1>
+        <button onclick="openAdmin()" class="text-sm bg-blue-700 px-3 py-1 rounded hover:bg-blue-600">관리자 모드</button>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-6">
+        <!-- 로그인/조회 섹션 -->
+        <section class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">학생 정보 입력</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" id="studentLevel" placeholder="레벨 (예: 3A-S)" class="border p-2 rounded focus:outline-blue-500">
+                <input type="text" id="studentName" placeholder="학생 영어 이름" class="border p-2 rounded focus:outline-blue-500">
+            </div>
+            <p class="text-xs text-red-500 mt-2">* 레벨과 이름을 입력해야 선생님 목록이 활성화됩니다.</p>
+        </section>
+
+        <!-- 선생님 선택 섹션 -->
+        <section id="teacherSection" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 opacity-50 pointer-events-none">
+            <!-- JS로 생성될 선생님 버튼들 -->
+        </section>
+
+        <!-- 시간 선택 섹션 (선생님 클릭 시 노출) -->
+        <section id="timeSection" class="bg-white p-6 rounded-lg shadow-md hidden">
+            <h3 id="selectedTeacherName" class="text-blue-800 font-bold mb-1">선생님 이름</h3>
+            <p id="teacherLevels" class="text-sm text-gray-500 mb-4 font-medium"></p>
+            <div id="timeGrid" class="grid grid-cols-4 md:grid-cols-8 gap-2">
+                <!-- 5분 단위 시간 슬롯 생성 -->
+            </div>
+        </section>
+
+        <!-- 예약 요약 섹션 -->
+        <section class="mt-8 bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h3 class="font-bold text-blue-900 mb-2">내 예약 현황</h3>
+            <div id="myReservation" class="text-sm text-gray-700">
+                선택된 예약이 없습니다. (최대 2명 선택 가능)
+            </div>
+        </section>
+    </main>
+
+    <!-- 관리자 모달 -->
+    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">관리자 화면</h2>
+                <button onclick="closeAdmin()" class="text-gray-500 text-2xl">&times;</button>
+            </div>
+            <div class="flex gap-2 mb-4">
+                <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded text-sm">엑셀로 저장</button>
+            </div>
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border p-2">회차</th>
+                        <th class="border p-2">레벨</th>
+                        <th class="border p-2">이름</th>
+                        <th class="border p-2">선생님</th>
+                        <th class="border p-2">시간</th>
+                        <th class="border p-2">작업</th>
+                    </tr>
+                </thead>
+                <tbody id="adminTableBody">
+                    <!-- 데이터 리스트 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 1. Firebase 설정 (제공해주신 주소 사용)
+        const firebaseConfig = {
+            databaseURL: "https://lexkimhw-63c3b-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 2. 초기 데이터
+        const teachers = [
+            { name: "Ms. Conroy", levels: "3A-S, 3J-S, 4J-W, 4K-W, 5Q-W" },
+            { name: "Ms. Hehn", levels: "담당 레벨 리스트" },
+            { name: "Ms. Jackson", levels: "담당 레벨 리스트" },
+            { name: "Ms. Love", levels: "담당 레벨 리스트" },
+            { name: "Ms. Portewig", levels: "담당 레벨 리스트" },
+            { name: "Ms. Proper", levels: "담당 레벨 리스트" }
+        ];
+
+        // 3. UI 제어 로직
+        const levelInput = document.getElementById('studentLevel');
+        const nameInput = document.getElementById('studentName');
+        const teacherSection = document.getElementById('teacherSection');
+
+        // 정보 입력 체크
+        [levelInput, nameInput].forEach(el => {
+            el.addEventListener('input', () => {
+                if(levelInput.value.trim() && nameInput.value.trim()) {
+                    teacherSection.classList.remove('opacity-50', 'pointer-events-none');
+                } else {
+                    teacherSection.classList.add('opacity-50', 'pointer-events-none');
+                }
+            });
+        });
+
+        // 선생님 버튼 생성
+        teachers.forEach(t => {
+            const btn = document.createElement('button');
+            btn.className = "bg-white border-2 border-blue-900 text-blue-900 p-4 rounded-lg font-bold hover:bg-blue-900 hover:text-white transition";
+            btn.innerText = t.name;
+            btn.onclick = () => showTimes(t);
+            teacherSection.appendChild(btn);
+        });
+
+        // 시간 슬롯 생성 (10:15 ~ 13:00, 5분 간격)
+        function showTimes(teacher) {
+            document.getElementById('timeSection').classList.remove('hidden');
+            document.getElementById('selectedTeacherName').innerText = teacher.name;
+            document.getElementById('teacherLevels').innerText = "담당 레벨: " + teacher.levels;
+            
+            const grid = document.getElementById('timeGrid');
+            grid.innerHTML = '';
+            
+            let current = new Date(2026, 4, 22, 10, 15);
+            const end = new Date(2026, 4, 22, 13, 0);
+
+            while(current <= end) {
+                const timeStr = current.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                const slot = document.createElement('div');
+                slot.className = "time-slot p-2 text-center text-xs rounded available border";
+                slot.innerText = timeStr;
+                
+                // 클릭 이벤트 (예약 로직)
+                slot.onclick = () => handleReservation(teacher.name, timeStr);
+                
+                grid.appendChild(slot);
+                current.setMinutes(current.getMinutes() + 5);
+            }
+        }
+
+        // 예약 핸들러 (샘플 로직)
+        function handleReservation(teacherName, time) {
+            if(confirm(`${teacherName} 선생님과 ${time} 분에 예약하시겠습니까?`)) {
+                // 실제 Firebase set/push 로직이 여기에 들어갑니다.
+                alert("예약이 시도되었습니다. (Firebase 연동 필요)");
+            }
+        }
+
+        // 4. 관리자 모드 로직
+        function openAdmin() {
+            const pw = prompt("관리자 비밀번호를 입력하세요.");
+            if(pw === '5556575') {
+                document.getElementById('adminModal').classList.remove('hidden');
+                loadAdminData();
+            } else {
+                alert("비밀번호가 틀렸습니다.");
+            }
+        }
+
+        function closeAdmin() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        function loadAdminData() {
+            // Firebase에서 데이터를 가져와 adminTableBody에 채우는 로직
+            const tbody = document.getElementById('adminTableBody');
+            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">데이터를 불러오는 중...</td></tr>`;
+        }
+
+        function exportToExcel() {
+            const table = document.querySelector("#adminModal table");
+            const wb = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(wb, "간담회_예약리스트.xlsx");
+        }
+    </script>
+</body>
+</html>
