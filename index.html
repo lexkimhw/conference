@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>렉스김어학원 간담회 예약</title>
+    <title>렉스김어학원 간담회 예약 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase App & Database SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <!-- Excel Export Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         .time-slot { transition: all 0.2s; }
@@ -18,161 +16,203 @@
         .available:hover { background-color: #d1d5db; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-100 min-h-screen font-sans">
 
-    <!-- 헤더 -->
-    <header class="bg-blue-900 text-white p-4 shadow-lg flex justify-between items-center">
-        <h1 class="text-xl font-bold">렉스김어학원 학부모 간담회</h1>
-        <button onclick="openAdmin()" class="text-sm bg-blue-700 px-3 py-1 rounded hover:bg-blue-600">관리자 모드</button>
+    <header class="bg-blue-900 text-white p-5 shadow-xl flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold italic">LEX KIM English Academy</h1>
+            <p class="text-xs opacity-80 text-right">학부모 간담회 예약 시스템</p>
+        </div>
+        <button onclick="openAdmin()" class="text-sm bg-blue-700 px-4 py-2 rounded-full hover:bg-blue-600 transition-colors">관리자 모드</button>
     </header>
 
-    <main class="max-w-4xl mx-auto p-6">
-        <!-- 로그인/조회 섹션 -->
-        <section class="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 class="text-lg font-semibold mb-4 text-gray-700">학생 정보 입력</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" id="studentLevel" placeholder="레벨 (예: 3A-S)" class="border p-2 rounded focus:outline-blue-500">
-                <input type="text" id="studentName" placeholder="학생 영어 이름" class="border p-2 rounded focus:outline-blue-500">
-            </div>
-            <p class="text-xs text-red-500 mt-2">* 레벨과 이름을 입력해야 선생님 목록이 활성화됩니다.</p>
-        </section>
-
-        <!-- 선생님 선택 섹션 -->
-        <section id="teacherSection" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 opacity-50 pointer-events-none">
-            <!-- JS로 생성될 선생님 버튼들 -->
-        </section>
-
-        <!-- 시간 선택 섹션 (선생님 클릭 시 노출) -->
-        <section id="timeSection" class="bg-white p-6 rounded-lg shadow-md hidden">
-            <h3 id="selectedTeacherName" class="text-blue-800 font-bold mb-1">선생님 이름</h3>
-            <p id="teacherLevels" class="text-sm text-gray-500 mb-4 font-medium"></p>
-            <div id="timeGrid" class="grid grid-cols-4 md:grid-cols-8 gap-2">
-                <!-- 5분 단위 시간 슬롯 생성 -->
+    <main class="max-w-5xl mx-auto p-6">
+        <section class="bg-white p-6 rounded-xl shadow-md mb-6 border-l-8 border-blue-900">
+            <h2 class="text-xl font-bold mb-3 text-blue-900">🗓️ 간담회 일정 안내</h2>
+            <div class="space-y-2 text-gray-700 font-medium">
+                <p class="p-2 bg-blue-50 rounded">📌 <span class="text-blue-800 font-bold">1차:</span> 5월 21일(목) | 초등 2학년 ~ 3학년</p>
+                <p class="p-2 bg-blue-50 rounded">📌 <span class="text-blue-800 font-bold">2차:</span> 5월 22일(금) | 초등 4학년 ~ 6학년</p>
             </div>
         </section>
 
-        <!-- 예약 요약 섹션 -->
-        <section class="mt-8 bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h3 class="font-bold text-blue-900 mb-2">내 예약 현황</h3>
-            <div id="myReservation" class="text-sm text-gray-700">
-                선택된 예약이 없습니다. (최대 2명 선택 가능)
+        <section class="bg-white p-8 rounded-xl shadow-md mb-6">
+            <h2 class="text-lg font-bold mb-5 text-gray-800 flex items-center">
+                <span class="mr-2">👤</span> 학생 정보 입력
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">레벨</label>
+                    <input type="text" id="studentLevel" placeholder="예: 3A" class="w-full border-2 p-3 rounded-lg focus:border-blue-500 focus:outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">한글 이름</label>
+                    <input type="text" id="studentKrName" placeholder="예: 홍길동" class="w-full border-2 p-3 rounded-lg focus:border-blue-500 focus:outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-600 mb-1">영어 이름</label>
+                    <input type="text" id="studentEnName" placeholder="예: James" class="w-full border-2 p-3 rounded-lg focus:border-blue-500 focus:outline-none transition-all">
+                </div>
             </div>
+            <p class="text-sm text-red-500 mt-4 font-medium italic">* 모든 정보를 정확히 입력해야 선생님 목록이 나타납니다.</p>
         </section>
+
+        <section id="teacherSection" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8 opacity-40 pointer-events-none transition-opacity duration-500">
+            </section>
+
+        <section id="timeSection" class="bg-white p-8 rounded-xl shadow-lg hidden animate-fade-in border-t-4 border-blue-900">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b">
+                <div>
+                    <h3 id="selectedTeacherName" class="text-2xl font-black text-blue-900 mb-1">선생님 이름</h3>
+                    <div id="teacherLevelsDisplay" class="flex flex-wrap gap-2 mt-2">
+                        </div>
+                </div>
+                <p class="text-gray-500 text-sm mt-4 md:mt-0 font-semibold bg-gray-100 p-2 rounded">상담 시간: 5분 내외</p>
+            </div>
+            
+            <div id="timeGrid" class="grid grid-cols-4 md:grid-cols-10 gap-3">
+                </div>
+        </section>
+
+        <div class="sticky bottom-6 mt-10 bg-blue-900 text-white p-5 rounded-2xl shadow-2xl flex justify-between items-center border-4 border-white">
+            <div>
+                <p class="text-xs uppercase tracking-widest opacity-70">현재 선택된 예약</p>
+                <div id="myReservation" class="font-bold text-lg font-mono tracking-tighter">선택된 상담 시간이 없습니다. (최대 2명)</div>
+            </div>
+            <button class="bg-yellow-400 text-blue-900 px-6 py-2 rounded-xl font-black hover:bg-yellow-300">최종 신청하기</button>
+        </div>
     </main>
 
-    <!-- 관리자 모달 -->
-    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-4xl max-h-[80vh] overflow-y-auto rounded-lg p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold">관리자 화면</h2>
-                <button onclick="closeAdmin()" class="text-gray-500 text-2xl">&times;</button>
+    <div id="adminModal" class="fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl p-8 my-10">
+            <div class="flex justify-between items-center mb-8 border-b pb-4">
+                <h2 class="text-3xl font-black text-gray-800">ADMIN CONTROL</h2>
+                <button onclick="closeAdmin()" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300 transition-all text-2xl font-bold">&times;</button>
             </div>
-            <div class="flex gap-2 mb-4">
-                <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded text-sm">엑셀로 저장</button>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-gray-50 p-6 rounded-xl border">
+                    <h3 class="font-bold mb-4 text-blue-800">👨‍🏫 선생님 등록/수정</h3>
+                    <input type="text" id="newTeacherName" placeholder="선생님 성함" class="w-full border p-3 rounded mb-3">
+                    <textarea id="newTeacherLevels" placeholder="담당 레벨 (쉼표 구분: 3A-W, 3H-R)" class="w-full border p-3 rounded mb-4 h-24"></textarea>
+                    <button onclick="saveTeacher()" class="w-full bg-blue-900 text-white p-3 rounded-lg font-bold hover:bg-blue-800 transition">데이터 저장</button>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold">📋 예약 및 선생님 리스트</h3>
+                        <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-green-700">엑셀 다운로드(.xlsx)</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse border rounded-lg">
+                            <thead class="bg-gray-800 text-white">
+                                <tr>
+                                    <th class="p-3">구분</th>
+                                    <th class="p-3">항목</th>
+                                    <th class="p-3">상세 내용</th>
+                                    <th class="p-3 text-center">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTableBody">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <table class="w-full text-left border-collapse text-sm">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="border p-2">회차</th>
-                        <th class="border p-2">레벨</th>
-                        <th class="border p-2">이름</th>
-                        <th class="border p-2">선생님</th>
-                        <th class="border p-2">시간</th>
-                        <th class="border p-2">작업</th>
-                    </tr>
-                </thead>
-                <tbody id="adminTableBody">
-                    <!-- 데이터 리스트 -->
-                </tbody>
-            </table>
         </div>
     </div>
 
     <script>
-        // 1. Firebase 설정 (제공해주신 주소 사용)
+        // 1. Firebase 연동
         const firebaseConfig = {
             databaseURL: "https://lexkimhw-63c3b-default-rtdb.asia-southeast1.firebasedatabase.app/"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. 초기 데이터
-        const teachers = [
-            { name: "Ms. Conroy", levels: "3A-S, 3J-S, 4J-W, 4K-W, 5Q-W" },
-            { name: "Ms. Hehn", levels: "담당 레벨 리스트" },
-            { name: "Ms. Jackson", levels: "담당 레벨 리스트" },
-            { name: "Ms. Love", levels: "담당 레벨 리스트" },
-            { name: "Ms. Portewig", levels: "담당 레벨 리스트" },
-            { name: "Ms. Proper", levels: "담당 레벨 리스트" }
+        // 2. 초기 로컬 데이터 (나중에 Firebase 연동 시 db.ref('teachers')에서 가져옴)
+        let teachers = [
+            { id: 1, name: "Ms. Conroy", levels: ["3A-W", "3H-R"] },
+            { id: 2, name: "Ms. Hehn", levels: ["4K-W", "4L-R"] },
+            { id: 3, name: "Ms. Jackson", levels: ["5M-W", "5N-R"] },
+            { id: 4, name: "Ms. Love", levels: ["2S-W", "3A-S"] },
+            { id: 5, name: "Ms. Portewig", levels: ["6P-W", "5Q-W"] },
+            { id: 6, name: "Ms. Proper", levels: ["3J-S", "4J-W"] }
         ];
 
-        // 3. UI 제어 로직
-        const levelInput = document.getElementById('studentLevel');
-        const nameInput = document.getElementById('studentName');
-        const teacherSection = document.getElementById('teacherSection');
-
-        // 정보 입력 체크
-        [levelInput, nameInput].forEach(el => {
-            el.addEventListener('input', () => {
-                if(levelInput.value.trim() && nameInput.value.trim()) {
-                    teacherSection.classList.remove('opacity-50', 'pointer-events-none');
-                } else {
-                    teacherSection.classList.add('opacity-50', 'pointer-events-none');
-                }
-            });
+        // 3. 학생 정보 입력 감지
+        const inputs = ['studentLevel', 'studentKrName', 'studentEnName'];
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', checkInputs);
         });
 
-        // 선생님 버튼 생성
-        teachers.forEach(t => {
-            const btn = document.createElement('button');
-            btn.className = "bg-white border-2 border-blue-900 text-blue-900 p-4 rounded-lg font-bold hover:bg-blue-900 hover:text-white transition";
-            btn.innerText = t.name;
-            btn.onclick = () => showTimes(t);
-            teacherSection.appendChild(btn);
-        });
-
-        // 시간 슬롯 생성 (10:15 ~ 13:00, 5분 간격)
-        function showTimes(teacher) {
-            document.getElementById('timeSection').classList.remove('hidden');
-            document.getElementById('selectedTeacherName').innerText = teacher.name;
-            document.getElementById('teacherLevels').innerText = "담당 레벨: " + teacher.levels;
-            
-            const grid = document.getElementById('timeGrid');
-            grid.innerHTML = '';
-            
-            let current = new Date(2026, 4, 22, 10, 15);
-            const end = new Date(2026, 4, 22, 13, 0);
-
-            while(current <= end) {
-                const timeStr = current.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                const slot = document.createElement('div');
-                slot.className = "time-slot p-2 text-center text-xs rounded available border";
-                slot.innerText = timeStr;
-                
-                // 클릭 이벤트 (예약 로직)
-                slot.onclick = () => handleReservation(teacher.name, timeStr);
-                
-                grid.appendChild(slot);
-                current.setMinutes(current.getMinutes() + 5);
-            }
-        }
-
-        // 예약 핸들러 (샘플 로직)
-        function handleReservation(teacherName, time) {
-            if(confirm(`${teacherName} 선생님과 ${time} 분에 예약하시겠습니까?`)) {
-                // 실제 Firebase set/push 로직이 여기에 들어갑니다.
-                alert("예약이 시도되었습니다. (Firebase 연동 필요)");
-            }
-        }
-
-        // 4. 관리자 모드 로직
-        function openAdmin() {
-            const pw = prompt("관리자 비밀번호를 입력하세요.");
-            if(pw === '5556575') {
-                document.getElementById('adminModal').classList.remove('hidden');
-                loadAdminData();
+        function checkInputs() {
+            const allFilled = inputs.every(id => document.getElementById(id).value.trim().length > 0);
+            const section = document.getElementById('teacherSection');
+            if(allFilled) {
+                section.classList.remove('opacity-40', 'pointer-events-none');
             } else {
-                alert("비밀번호가 틀렸습니다.");
+                section.classList.add('opacity-40', 'pointer-events-none');
+            }
+        }
+
+        // 4. 선생님 목록 렌더링
+        function renderTeachers() {
+            const section = document.getElementById('teacherSection');
+            section.innerHTML = '';
+            teachers.forEach(t => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white border-2 border-gray-200 text-blue-900 p-6 rounded-2xl font-black text-lg shadow-sm hover:border-blue-900 hover:scale-105 transition-all flex flex-col items-center justify-center";
+                btn.innerHTML = `<span>${t.name}</span><span class="text-[10px] font-normal opacity-50 mt-1 uppercase tracking-widest">Counseling</span>`;
+                btn.onclick = () => showTimeSelection(t);
+                section.appendChild(btn);
+            });
+        }
+
+        // 5. 선생님 클릭 시 하단에 레벨 코드 및 시간 표시
+        function showTimeSelection(teacher) {
+            const timeSection = document.getElementById('timeSection');
+            const teacherNameHeader = document.getElementById('selectedTeacherName');
+            const levelsDisplay = document.getElementById('teacherLevelsDisplay');
+            const timeGrid = document.getElementById('timeGrid');
+
+            timeSection.classList.remove('hidden');
+            teacherNameHeader.innerText = teacher.name;
+            
+            // 레벨 배지 생성
+            levelsDisplay.innerHTML = '';
+            teacher.levels.forEach(lvl => {
+                const badge = document.createElement('span');
+                badge.className = "bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full border border-blue-200";
+                badge.innerText = lvl;
+                levelsDisplay.appendChild(badge);
+            });
+
+            // 시간 슬롯 생성 (10:15 ~ 13:00)
+            timeGrid.innerHTML = '';
+            let start = new Date(2026, 4, 21, 10, 15);
+            const end = new Date(2026, 4, 21, 13, 0);
+
+            while(start <= end) {
+                const timeStr = start.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                const slot = document.createElement('div');
+                slot.className = "time-slot p-3 text-center text-sm font-bold rounded-lg available border shadow-sm";
+                slot.innerText = timeStr;
+                slot.onclick = () => alert(`${teacher.name} 선생님과 ${timeStr} 예약을 신청하시겠습니까?`);
+                timeGrid.appendChild(slot);
+                start.setMinutes(start.getMinutes() + 5);
+            }
+            
+            // 스크롤 이동
+            timeSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 6. 관리자 모드
+        function openAdmin() {
+            if(prompt("관리자 암호를 입력하세요.") === '5556575') {
+                document.getElementById('adminModal').classList.remove('hidden');
+                refreshAdminTable();
+            } else {
+                alert("비밀번호가 일치하지 않습니다.");
             }
         }
 
@@ -180,17 +220,56 @@
             document.getElementById('adminModal').classList.add('hidden');
         }
 
-        function loadAdminData() {
-            // Firebase에서 데이터를 가져와 adminTableBody에 채우는 로직
+        function refreshAdminTable() {
             const tbody = document.getElementById('adminTableBody');
-            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">데이터를 불러오는 중...</td></tr>`;
+            tbody.innerHTML = '';
+            teachers.forEach(t => {
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 border font-bold text-blue-700 uppercase">Teacher</td>
+                        <td class="p-3 border font-semibold">${t.name}</td>
+                        <td class="p-3 border text-gray-500">${t.levels.join(', ')}</td>
+                        <td class="p-3 border text-center">
+                            <button onclick="deleteTeacher(${t.id})" class="bg-red-100 text-red-600 px-3 py-1 rounded font-bold hover:bg-red-200">삭제</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function saveTeacher() {
+            const name = document.getElementById('newTeacherName').value;
+            const levelsRaw = document.getElementById('newTeacherLevels').value;
+            if(!name || !levelsRaw) return alert("내용을 모두 입력해주세요.");
+            
+            const newT = {
+                id: Date.now(),
+                name: name,
+                levels: levelsRaw.split(',').map(l => l.trim())
+            };
+            teachers.push(newT);
+            renderTeachers();
+            refreshAdminTable();
+            alert("저장되었습니다.");
+        }
+
+        function deleteTeacher(id) {
+            if(confirm("해당 선생님을 삭제하시겠습니까?")) {
+                teachers = teachers.filter(t => t.id !== id);
+                renderTeachers();
+                refreshAdminTable();
+            }
         }
 
         function exportToExcel() {
             const table = document.querySelector("#adminModal table");
             const wb = XLSX.utils.table_to_book(table);
-            XLSX.writeFile(wb, "간담회_예약리스트.xlsx");
+            XLSX.writeFile(wb, "LexKim_간담회_리스트.xlsx");
         }
+
+        // 초기 실행
+        renderTeachers();
     </script>
 </body>
 </html>
