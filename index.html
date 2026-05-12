@@ -17,11 +17,13 @@
         .available { background-color: #f8fafc; cursor: pointer; color: #1e293b; }
         .available:hover { background-color: #1e3a8a; color: white; border-color: #1e3a8a; }
         .reserved { background-color: #cbd5e1 !important; color: #94a3b8 !important; cursor: not-allowed !important; pointer-events: none !important; border: none !important; }
-        .my-choice { background-color: #1e3a8a !important; color: white !important; font-weight: 900; }
         .timeline-bar { height: 24px; display: flex; border-radius: 4px; overflow: hidden; background: #f1f5f9; border: 1px solid #e2e8f0; }
-        .timeline-cell { flex: 1; height: 100%; border-right: 1px solid rgba(255,255,255,0.3); position: relative; }
+        .timeline-cell { flex: 1; height: 100%; border-right: 1px solid rgba(255,255,255,0.3); }
         .cell-reserved { background-color: #ef4444; }
         .cell-free { background-color: #10b981; }
+        /* 모달 내부 스크롤바 디자인 */
+        #adminModalContent::-webkit-scrollbar { width: 8px; }
+        #adminModalContent::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body id="capture-area" class="bg-slate-50 min-h-screen pb-40">
@@ -37,110 +39,78 @@
     <main class="max-w-4xl mx-auto p-6">
         <section class="bg-white p-6 rounded-3xl shadow-sm mb-8 border border-slate-200 relative overflow-hidden">
             <div class="absolute top-0 left-0 w-2 h-full bg-amber-400"></div>
-            <div id="displayNotice" class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap font-medium">공지사항을 불러오는 중입니다...</div>
+            <div id="displayNotice" class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap font-medium">불러오는 중...</div>
         </section>
 
-        <section class="mb-10">
-            <h2 class="text-xs font-black text-blue-900 mb-4 flex items-center uppercase tracking-widest">
-                <span class="w-5 h-5 bg-blue-900 text-white rounded flex items-center justify-center mr-2 text-[10px]">01</span>
-                간담회 일정 선택
-            </h2>
-            <div id="dateList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </section>
-
-        <section id="step2Section" class="mb-10 step-inactive">
-            <h2 class="text-xs font-black text-blue-900 mb-4 flex items-center uppercase tracking-widest">
-                <span class="w-5 h-5 bg-blue-900 text-white rounded flex items-center justify-center mr-2 text-[10px]">02</span>
-                학생 및 부모님 정보
-            </h2>
+        <div id="dateList" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10"></div>
+        <div id="step2Section" class="step-inactive mb-10">
             <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <input type="text" id="stuLevel" oninput="checkStep2()" placeholder="레벨" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
-                <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
-                <input type="tel" id="parentPhone" oninput="checkStep2()" placeholder="부모님 휴대폰" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+                <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+                <input type="tel" id="parentPhone" oninput="checkStep2()" placeholder="연락처" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
             </div>
-        </section>
-
-        <section id="step3Section" class="mb-10 step-inactive">
-            <h2 class="text-xs font-black text-blue-900 mb-4 flex items-center uppercase tracking-widest">
-                <span class="w-5 h-5 bg-blue-900 text-white rounded flex items-center justify-center mr-2 text-[10px]">03</span>
-                상담 선생님 선택
-            </h2>
+        </div>
+        <div id="step3Section" class="step-inactive mb-10">
             <div id="teacherList" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
-        </section>
-
-        <section id="step4Section" class="bg-slate-900 p-8 rounded-[2rem] shadow-2xl mb-10 hidden">
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <span id="displayTargetDate" class="text-[10px] font-black text-blue-400 border border-blue-400/30 px-3 py-1 rounded-full"></span>
-                    <h3 id="displayTeacherName" class="text-3xl font-black text-white mt-2"></h3>
-                    <div id="displayTeacherLevels" class="flex flex-wrap gap-2 mt-4"></div>
-                </div>
-                <button onclick="document.getElementById('step4Section').classList.add('hidden')" class="text-white/30 hover:text-white text-3xl">&times;</button>
-            </div>
+        </div>
+        <div id="step4Section" class="bg-slate-900 p-8 rounded-[2rem] shadow-2xl mb-10 hidden">
             <div id="timeGrid" class="grid grid-cols-4 md:grid-cols-8 gap-2 text-white"></div>
-        </section>
+        </div>
     </main>
 
-    <div id="adminModal" class="fixed inset-0 bg-slate-900/95 hidden z-[100] flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white w-full max-w-6xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col my-8">
-            <div class="p-6 border-b flex justify-between items-center bg-slate-100">
+    <div id="adminModal" class="fixed inset-0 bg-slate-900/90 hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-5xl h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col">
+            
+            <div class="p-6 border-b flex justify-between items-center bg-slate-50 shrink-0">
                 <div class="flex items-center gap-4">
-                    <h2 class="text-xl font-black italic text-slate-800">ADMIN CONTROL CENTER</h2>
-                    <button onclick="closeAdmin()" class="bg-blue-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-800 transition">
-                        ← 메인 화면으로 돌아가기
+                    <h2 class="text-xl font-black italic text-blue-900">ADMIN PANEL</h2>
+                    <button onclick="closeAdmin()" class="bg-blue-900 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-blue-800 transition shadow-lg">
+                        ← 메인 예약화면으로 이동
                     </button>
                 </div>
-                <button onclick="closeAdmin()" class="text-3xl text-slate-400 hover:text-slate-900 transition">&times;</button>
+                <button onclick="closeAdmin()" class="text-3xl text-slate-400 hover:text-slate-900">&times;</button>
             </div>
             
-            <div class="p-8 space-y-8">
-                <div class="bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-sm">
-                    <h3 class="font-black mb-4 text-blue-900 flex items-center gap-2">
-                        <span class="bg-blue-900 text-white text-[10px] px-2 py-0.5 rounded">STEP 0</span>
-                        📢 공지사항 관리
-                    </h3>
-                    <textarea id="adminNoticeInput" class="w-full h-32 p-4 rounded-2xl border-2 border-slate-50 bg-slate-50 mb-3 text-sm focus:bg-white focus:border-blue-200 outline-none transition-all" placeholder="메인 화면에 표시될 공지 내용을 입력하세요."></textarea>
-                    <button onclick="updateNotice()" class="w-full bg-blue-900 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-blue-800 transition">공지사항 즉시 업데이트</button>
+            <div id="adminModalContent" class="p-8 space-y-10 overflow-y-auto bg-white flex-1">
+                
+                <div class="bg-blue-50 p-6 rounded-3xl border border-blue-100">
+                    <h3 class="font-black mb-4 text-blue-900 flex items-center gap-2 text-lg">📢 공지사항 설정</h3>
+                    <textarea id="adminNoticeInput" class="w-full h-32 p-4 rounded-2xl border-2 border-white mb-3 text-sm shadow-inner outline-none focus:border-blue-400 transition-all" placeholder="메인 화면 상단에 띄울 공지 내용을 입력하세요."></textarea>
+                    <button onclick="updateNotice()" class="w-full bg-blue-900 text-white py-3 rounded-xl font-black hover:bg-blue-800 transition shadow-md">공지사항 즉시 적용하기</button>
                 </div>
 
-                <div class="bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-sm">
-                    <h3 class="font-black mb-4 text-blue-900 flex items-center gap-2">
-                        <span class="bg-blue-900 text-white text-[10px] px-2 py-0.5 rounded">STEP 1</span>
-                        📅 간담회 일정(회차) 관리
-                    </h3>
-                    <div class="flex gap-2 mb-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div class="bg-slate-50 p-6 rounded-3xl border border-slate-200">
+                    <h3 class="font-black mb-4 text-slate-800 flex items-center gap-2">📅 간담회 일정(회차) 수정 및 추가</h3>
+                    <div class="flex gap-2 mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                         <input type="hidden" id="editDateKey">
-                        <input type="text" id="newDateName" placeholder="차수 (예: 1차)" class="w-1/4 p-2 rounded-xl border text-sm outline-none focus:border-blue-400">
-                        <input type="text" id="newDateDesc" placeholder="설명 (예: 11월 5일 목요일)" class="flex-1 p-2 rounded-xl border text-sm outline-none focus:border-blue-400">
-                        <button id="dateSubmitBtn" onclick="saveDate()" class="bg-green-600 text-white px-6 rounded-xl font-bold text-sm shadow-md">저장/추가</button>
+                        <input type="text" id="newDateName" placeholder="차수 (예: 1차)" class="w-1/4 p-2 rounded-xl border text-sm outline-none">
+                        <input type="text" id="newDateDesc" placeholder="설명 (예: 초등부 대상)" class="flex-1 p-2 rounded-xl border text-sm outline-none">
+                        <button id="dateSubmitBtn" onclick="saveDate()" class="bg-green-600 text-white px-6 rounded-xl font-bold text-sm">저장</button>
                     </div>
-                    <div id="adminDateList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    <div id="adminDateList" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div>
                 </div>
 
-                <div class="bg-white p-6 rounded-3xl border-2 border-slate-100 shadow-sm">
-                    <h3 class="font-black mb-4 text-blue-900 flex items-center gap-2">
-                        <span class="bg-blue-900 text-white text-[10px] px-2 py-0.5 rounded">STEP 2</span>
-                        👨‍🏫 선생님 및 레벨 관리
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div class="bg-slate-50 p-6 rounded-3xl border border-slate-200">
+                    <h3 class="font-black mb-4 text-slate-800 flex items-center gap-2">👨‍🏫 선생님 목록 수정 및 추가</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 mb-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                         <input type="hidden" id="editTeacherKey">
-                        <select id="newTeacherDateRef" class="p-2 rounded-xl border text-sm outline-none"></select>
+                        <select id="newTeacherDateRef" class="p-2 rounded-xl border text-sm"></select>
                         <input type="text" id="newTeacherName" placeholder="선생님 성함" class="p-2 rounded-xl border text-sm outline-none">
-                        <input type="text" id="newTeacherLevels" placeholder="레벨(쉼표로 구분)" class="p-2 rounded-xl border text-sm outline-none">
-                        <button id="teacherSubmitBtn" onclick="saveTeacher()" class="bg-blue-900 text-white rounded-xl font-bold text-sm shadow-md">저장/추가</button>
+                        <input type="text" id="newTeacherLevels" placeholder="레벨(쉼표구분)" class="p-2 rounded-xl border text-sm outline-none">
+                        <button id="teacherSubmitBtn" onclick="saveTeacher()" class="bg-blue-900 text-white rounded-xl font-bold text-sm">저장</button>
                     </div>
                     <div id="adminTeacherList" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
                 </div>
 
-                <section class="pt-4">
+                <section>
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-black text-blue-900 text-lg">📋 전체 예약 데이터</h3>
-                        <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-green-700 transition">엑셀(Excel) 다운로드</button>
+                        <h3 class="font-black text-slate-800 text-lg">📋 실시간 예약 리스트</h3>
+                        <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md">Excel 다운로드</button>
                     </div>
-                    <div class="bg-white rounded-2xl border-2 border-slate-100 overflow-hidden shadow-sm">
+                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                         <table class="w-full text-[11px] border-collapse" id="adminTable">
-                            <thead class="bg-slate-50 border-b">
-                                <tr><th class="p-3">회차</th><th class="p-3">레벨</th><th class="p-3">이름</th><th class="p-3">연락처</th><th class="p-3">선생님</th><th class="p-3">시간</th><th class="p-3">삭제</th></tr>
+                            <thead class="bg-slate-100 border-b">
+                                <tr><th class="p-3">회차</th><th class="p-3">레벨</th><th class="p-3">이름</th><th class="p-3">연락처</th><th class="p-3">선생님</th><th class="p-3">시간</th><th class="p-3">관리</th></tr>
                             </thead>
                             <tbody id="adminBody" class="divide-y"></tbody>
                         </table>
@@ -160,23 +130,21 @@
         function initApp() {
             // 공지사항 연동
             db.ref('settings/notice').on('value', snap => {
-                const notice = snap.val() || "공지사항이 없습니다.";
+                const notice = snap.val() || "등록된 공지사항이 없습니다.";
                 document.getElementById('displayNotice').innerText = notice;
                 document.getElementById('adminNoticeInput').value = notice;
             });
             
-            // 일정(회차) 연동
+            // 일정 연동
             db.ref('settings/dates').on('value', snap => {
                 const dates = snap.val() || {};
                 const container = document.getElementById('dateList');
                 const selectBox = document.getElementById('newTeacherDateRef');
-                container.innerHTML = '';
-                selectBox.innerHTML = '<option value="">회차 선택</option>';
-                
+                container.innerHTML = ''; selectBox.innerHTML = '<option value="">회차 선택</option>';
                 Object.keys(dates).forEach(key => {
                     const d = dates[key];
                     const btn = document.createElement('button');
-                    btn.className = "p-6 border-2 border-white rounded-3xl text-left bg-white shadow-sm hover:shadow-md transition-all";
+                    btn.className = "p-6 border-2 border-white rounded-3xl text-left bg-white shadow-sm";
                     btn.innerHTML = `<div class="font-black text-slate-800 text-xl">${d.name}</div><div class="text-xs text-slate-500 font-bold">${d.desc}</div>`;
                     btn.onclick = () => {
                         selection.date = d.name;
@@ -199,17 +167,14 @@
             });
         }
 
-        // --- 관리자 모드 핵심 함수 ---
-        function updateNotice() { 
-            const newNotice = document.getElementById('adminNoticeInput').value;
-            db.ref('settings/notice').set(newNotice).then(() => alert("공지사항이 저장되었습니다.")); 
-        }
+        // --- 관리자 제어 ---
+        function updateNotice() { db.ref('settings/notice').set(document.getElementById('adminNoticeInput').value).then(() => alert("공지사항 업데이트 완료")); }
 
         function saveDate() {
             const key = document.getElementById('editDateKey').value;
             const name = document.getElementById('newDateName').value;
             const desc = document.getElementById('newDateDesc').value;
-            if(!name) return alert("차수 이름을 입력하세요.");
+            if(!name) return alert("내용을 입력하세요.");
             if(key) db.ref(`settings/dates/${key}`).update({ name, desc });
             else db.ref('settings/dates').push({ name, desc });
             clearDateForm();
@@ -234,7 +199,7 @@
             const dateRef = document.getElementById('newTeacherDateRef').value;
             const name = document.getElementById('newTeacherName').value;
             const lvls = document.getElementById('newTeacherLevels').value.split(',').map(s => s.trim());
-            if(!dateRef || !name) return alert("회차 선택과 성함을 확인하세요.");
+            if(!dateRef || !name) return alert("회차와 이름을 확인하세요.");
             if(key) db.ref(`settings/teachers/${key}`).update({ dateRef, name, levels: lvls });
             else db.ref('settings/teachers').push({ dateRef, name, levels: lvls });
             clearTeacherForm();
@@ -257,44 +222,44 @@
         }
 
         function refreshAdminControls() {
-            // 일정 목록 업데이트
+            // 일정 리스트 갱신
             db.ref('settings/dates').once('value', snap => {
                 const list = document.getElementById('adminDateList');
                 list.innerHTML = '';
                 const data = snap.val() || {};
                 Object.keys(data).forEach(key => {
                     const d = data[key];
-                    list.innerHTML += `<div class="flex justify-between items-center bg-slate-50 p-3 border rounded-2xl text-sm shadow-sm">
+                    list.innerHTML += `<div class="flex justify-between items-center bg-white p-3 border rounded-xl text-sm">
                         <span><b>${d.name}</b> (${d.desc})</span>
                         <div class="flex gap-2">
-                            <button onclick="editDate('${key}', '${d.name}', '${d.desc}')" class="text-blue-600 font-bold px-2 py-1 bg-white rounded-lg">수정</button>
-                            <button onclick="if(confirm('삭제할까요?')) db.ref('settings/dates/${key}').remove()" class="text-red-500 font-bold px-2 py-1 bg-white rounded-lg">삭제</button>
+                            <button onclick="editDate('${key}', '${d.name}', '${d.desc}')" class="text-blue-600 font-bold">수정</button>
+                            <button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/dates/${key}').remove()" class="text-red-500 font-bold">삭제</button>
                         </div>
                     </div>`;
                 });
             });
 
-            // 선생님 목록 업데이트
+            // 선생님 리스트 갱신
             db.ref('settings/teachers').once('value', snap => {
                 const list = document.getElementById('adminTeacherList');
                 list.innerHTML = '';
                 const data = snap.val() || {};
                 Object.keys(data).forEach(key => {
                     const t = data[key];
-                    list.innerHTML += `<div class="bg-slate-50 p-4 rounded-2xl border text-xs relative shadow-sm">
-                        <span class="absolute top-2 right-2 bg-blue-900 text-white px-2 py-0.5 rounded-full font-bold text-[9px]">${t.dateRef}</span>
+                    list.innerHTML += `<div class="bg-white p-4 rounded-xl border text-xs relative shadow-sm">
+                        <span class="absolute top-2 right-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">${t.dateRef}</span>
                         <div class="font-black text-blue-900 text-sm mb-1">${t.name}</div>
-                        <div class="text-slate-400 mb-3 h-8 overflow-hidden">${t.levels.join(', ')}</div>
-                        <div class="flex gap-2 pt-2 border-t border-slate-200">
-                            <button onclick="editTeacher('${key}', '${t.dateRef}', '${t.name}', '${t.levels.join(', ')}')" class="flex-1 bg-white text-blue-600 py-1 rounded-lg font-bold border">수정</button>
-                            <button onclick="if(confirm('삭제할까요?')) db.ref('settings/teachers/${key}').remove()" class="flex-1 bg-white text-red-500 py-1 rounded-lg font-bold border">삭제</button>
+                        <div class="text-slate-400 mb-3">${t.levels.join(', ')}</div>
+                        <div class="flex gap-2 border-t pt-2">
+                            <button onclick="editTeacher('${key}', '${t.dateRef}', '${t.name}', '${t.levels.join(', ')}')" class="flex-1 bg-blue-50 text-blue-600 py-1 rounded font-bold">수정</button>
+                            <button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/teachers/${key}').remove()" class="flex-1 bg-red-50 text-red-500 py-1 rounded font-bold">삭제</button>
                         </div>
                     </div>`;
                 });
             });
         }
 
-        // --- 사용자 예약 로직 (생략 방지) ---
+        // --- 사용자 모드 함수 ---
         function renderTeachers() {
             const list = document.getElementById('teacherList');
             list.innerHTML = '';
@@ -303,7 +268,7 @@
                 if(t.dateRef === selection.date) {
                     const hasReserved = selection.items.some(i => i.teacher === t.name);
                     const btn = document.createElement('button');
-                    btn.className = `p-5 rounded-2xl font-black text-sm border-2 transition-all ${hasReserved ? 'bg-blue-900 text-white border-blue-900 shadow-lg' : 'bg-white text-slate-700 border-slate-100 hover:border-blue-200 shadow-sm'}`;
+                    btn.className = `p-5 rounded-2xl font-black text-sm border-2 ${hasReserved ? 'bg-blue-900 text-white' : 'bg-white text-slate-700'}`;
                     btn.innerHTML = `${t.name}<br><span class="text-[9px] opacity-60 font-normal">${t.levels.join(', ')}</span>`;
                     btn.onclick = () => openSlots(t);
                     list.appendChild(btn);
@@ -314,17 +279,12 @@
         function openSlots(teacher) {
             const s4 = document.getElementById('step4Section');
             s4.classList.remove('hidden');
-            document.getElementById('displayTeacherName').innerText = teacher.name;
-            document.getElementById('displayTargetDate').innerText = selection.date;
-            const lvlBox = document.getElementById('displayTeacherLevels');
-            lvlBox.innerHTML = '';
-            teacher.levels.forEach(l => lvlBox.innerHTML += `<span class="bg-blue-400 text-blue-900 text-[10px] px-2 py-1 rounded-md font-black">${l}</span>`);
             const grid = document.getElementById('timeGrid'); grid.innerHTML = '';
             let curr = new Date(); curr.setHours(10, 20, 0, 0);
             while(curr <= new Date().setHours(12, 55, 0, 0)) {
                 const tStr = curr.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
                 const slot = document.createElement('button');
-                slot.className = "time-slot p-2 text-center text-[10px] font-bold rounded-lg available shadow-sm border border-slate-200";
+                slot.className = "time-slot p-2 text-center text-[10px] font-bold rounded-lg available";
                 slot.innerText = tStr;
                 slot.onclick = () => {
                     const idx = selection.items.findIndex(i => i.teacher === teacher.name);
@@ -361,38 +321,39 @@
         }
 
         function updateSummary() {
-            const s = document.getElementById('selectionSummary');
-            s.innerText = !selection.date ? "일정 선택 필수" : `${selection.date} | ${selection.krName || '...'} | ${selection.items.map(i=>i.teacher).join(', ')}`;
+            document.getElementById('selectionSummary').innerText = !selection.date ? "일정 선택 필수" : `${selection.date} | ${selection.krName || '...'} | ${selection.items.map(i=>i.teacher).join(', ')}`;
         }
 
         function submitReservation() {
-            if(selection.items.length === 0) return alert("상담받을 선생님과 시간을 선택하세요.");
-            db.ref('appointments').push(selection).then(() => { alert("정상적으로 예약되었습니다."); location.reload(); });
+            if(selection.items.length === 0) return alert("시간 선택 필수");
+            db.ref('appointments').push(selection).then(() => { alert("예약 완료!"); location.reload(); });
         }
 
-        // --- 기타 기능 ---
-        function openAdmin() { if(prompt("관리자 PW")==='5556575') { document.getElementById('adminModal').classList.remove('hidden'); refreshAdminControls(); refreshAdminVisuals(); } }
-        function closeAdmin() { document.getElementById('adminModal').classList.add('hidden'); }
-        function refreshAdminVisuals() {
-            db.ref('appointments').on('value', snap => {
-                const data = snap.val() || {};
-                const b = document.getElementById('adminBody'); b.innerHTML = '';
-                Object.keys(data).forEach(k => {
-                    const a = data[k]; a.items.forEach(i => { b.innerHTML += `<tr><td class="p-3 border">${a.date}</td><td class="p-3 border">${a.level}</td><td class="p-3 border font-bold">${a.krName}</td><td class="p-3 border">${a.parentPhone}</td><td class="p-3 border text-blue-700 font-bold">${i.teacher}</td><td class="p-3 border font-black">${i.time}</td><td class="p-3 border text-center"><button onclick="if(confirm('삭제?')) db.ref('appointments/${k}').remove()" class="text-red-500 font-bold px-2 py-1 bg-slate-50 rounded">삭제</button></td></tr>`; });
+        function openAdmin() {
+            if(prompt("관리자 PW")==='5556575') {
+                document.getElementById('adminModal').classList.remove('hidden');
+                refreshAdminControls();
+                db.ref('appointments').on('value', snap => {
+                    const data = snap.val() || {};
+                    const b = document.getElementById('adminBody'); b.innerHTML = '';
+                    Object.keys(data).forEach(k => {
+                        const a = data[k]; a.items.forEach(i => {
+                            b.innerHTML += `<tr><td class="p-3">${a.date}</td><td class="p-3">${a.level}</td><td class="p-3 font-bold">${a.krName}</td><td class="p-3">${a.parentPhone}</td><td class="p-3 font-bold text-blue-700">${i.teacher}</td><td class="p-3 font-black">${i.time}</td><td class="p-3 text-center"><button onclick="if(confirm('삭제?')) db.ref('appointments/${k}').remove()" class="text-red-500 font-bold">삭제</button></td></tr>`;
+                        });
+                    });
                 });
-            });
+            }
         }
+        function closeAdmin() { document.getElementById('adminModal').classList.add('hidden'); }
         function resetAll() { if(confirm("초기화하시겠습니까?")) location.reload(); }
-        function exportToExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('adminTable')), "REXKIM_DATA.xlsx"); }
-        function captureScreen() { html2canvas(document.querySelector("#capture-area")).then(canvas => { const a = document.createElement('a'); a.download = `예약확인.png`; a.href = canvas.toDataURL(); a.click(); }); }
-
+        function exportToExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('adminTable')), "REXKIM_RESERVATIONS.xlsx"); }
         initApp();
     </script>
     
-    <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t p-6 z-40 shadow-2xl">
+    <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t p-6 z-40 shadow-2xl">
         <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div id="selectionSummary" class="text-blue-900 font-black text-lg">정보를 입력해 주세요.</div>
-            <button onclick="submitReservation()" class="w-full md:w-auto bg-blue-900 text-white px-10 py-4 rounded-2xl font-black shadow-lg hover:bg-blue-800 transition transform active:scale-95">예약 확정하기</button>
+            <button onclick="submitReservation()" class="w-full md:w-auto bg-blue-900 text-white px-10 py-4 rounded-2xl font-black">예약 확정</button>
         </div>
     </div>
 </body>
