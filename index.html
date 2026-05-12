@@ -41,6 +41,13 @@
     </header>
 
     <main class="max-w-4xl mx-auto p-6">
+        <section class="bg-amber-50 p-4 rounded-2xl shadow-sm mb-4 border border-amber-200 text-center">
+            <p class="text-amber-800 font-black text-sm">
+                ⚠️ 예약 및 수정 가능 기간: <span id="displayDeadline" class="underline">설정 중...</span> 까지
+            </p>
+            <p id="deadlineStatus" class="text-xs font-bold mt-1 text-slate-500"></p>
+        </section>
+
         <section class="bg-white p-6 rounded-3xl shadow-sm mb-8 border border-slate-200">
             <div id="displayNotice" class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap font-medium font-bold italic">공지사항을 불러오고 있습니다...</div>
         </section>
@@ -56,7 +63,7 @@
             <div id="existingReservationArea" class="hidden bg-blue-50 border border-blue-200 p-6 rounded-2xl mb-4">
                 <h4 class="font-black text-blue-900 mb-2">💡 이미 등록된 예약 정보가 있습니다.</h4>
                 <div id="existingDetails" class="text-sm text-slate-700 mb-4"></div>
-                <button onclick="prepareEdit()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700">예약 정보 수정하기</button>
+                <button id="editBtn" onclick="prepareEdit()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed">예약 정보 수정하기</button>
             </div>
         </div>
 
@@ -86,6 +93,17 @@
             </div>
             
             <div class="p-8 space-y-12 overflow-y-auto flex-1">
+                <section class="bg-amber-50 p-6 rounded-3xl border border-amber-100">
+                    <h3 class="font-black mb-4 text-amber-900">⏳ 예약 가능 시간 설정</h3>
+                    <div class="flex gap-4 items-end">
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-amber-700 ml-1">마감 일시 설정</label>
+                            <input type="datetime-local" id="adminDeadlineInput" class="w-full p-3 rounded-xl border-2 border-white shadow-inner outline-none focus:border-amber-400 mt-1">
+                        </div>
+                        <button onclick="updateDeadline()" class="bg-amber-600 text-white px-8 py-3 rounded-xl font-black shadow-md hover:bg-amber-700">시간 설정 저장</button>
+                    </div>
+                </section>
+
                 <section class="bg-blue-50 p-6 rounded-3xl border border-blue-100">
                     <h3 class="font-black mb-4 text-blue-900">📢 공지사항 관리</h3>
                     <textarea id="adminNoticeInput" class="w-full h-24 p-4 rounded-2xl border-2 border-white mb-3 text-sm shadow-inner outline-none focus:border-blue-400"></textarea>
@@ -148,7 +166,7 @@
             <div id="selectionSummary" class="text-blue-900 font-black text-lg italic underline">정보를 입력해 주세요.</div>
             <div class="flex gap-2">
                 <button id="captureBtn" onclick="captureResult()" class="hidden bg-amber-500 text-white px-6 py-4 rounded-2xl font-black">현재 지정한 선생님 사진 찍기</button>
-                <button id="confirmBtn" onclick="submitReservation()" class="bg-blue-900 text-white px-10 py-4 rounded-2xl font-black">현재 상태 저장 하기</button>
+                <button id="confirmBtn" onclick="submitReservation()" class="bg-blue-900 text-white px-10 py-4 rounded-2xl font-black disabled:bg-slate-400 disabled:cursor-not-allowed">현재 상태 저장 하기</button>
             </div>
         </div>
     </div>
@@ -160,8 +178,37 @@
 
         let selection = { date: '', level: '', krName: '', parentPhone: '', items: [] };
         let existingKey = null;
+        let isDeadlinePassed = false; // 마감 여부 변수
 
         function initApp() {
+            // 예약 가능 시간 가져오기
+            db.ref('settings/deadline').on('value', snap => {
+                const deadline = snap.val();
+                if (deadline) {
+                    const deadlineDate = new Date(deadline);
+                    const now = new Date();
+                    
+                    document.getElementById('displayDeadline').innerText = deadline.replace('T', ' ');
+                    document.getElementById('adminDeadlineInput').value = deadline;
+
+                    if (now > deadlineDate) {
+                        isDeadlinePassed = true;
+                        document.getElementById('deadlineStatus').innerText = "🔴 현재 예약 및 수정이 마감되었습니다.";
+                        document.getElementById('deadlineStatus').className = "text-xs font-bold mt-1 text-red-600";
+                        document.getElementById('confirmBtn').disabled = true;
+                        document.getElementById('editBtn').disabled = true;
+                        document.getElementById('confirmBtn').innerText = "예약 마감";
+                    } else {
+                        isDeadlinePassed = false;
+                        document.getElementById('deadlineStatus').innerText = "🟢 현재 예약 및 수정이 가능합니다.";
+                        document.getElementById('deadlineStatus').className = "text-xs font-bold mt-1 text-green-600";
+                        document.getElementById('confirmBtn').disabled = false;
+                        document.getElementById('editBtn').disabled = false;
+                        document.getElementById('confirmBtn').innerText = "현재 상태 저장 하기";
+                    }
+                }
+            });
+
             // 공지사항
             db.ref('settings/notice').on('value', snap => {
                 const notice = snap.val() || "등록된 공지가 없습니다.";
@@ -181,7 +228,6 @@
                 
                 Object.keys(dates).forEach(key => {
                     const d = dates[key];
-                    // 메인 UI
                     const btn = document.createElement('button');
                     btn.className = "p-6 border-2 border-white rounded-3xl text-left bg-white shadow-sm transition-all";
                     btn.innerHTML = `<div class="font-black text-slate-800 text-xl">${d.name}</div><div class="text-xs text-slate-500 font-bold">${d.desc}</div>`;
@@ -194,7 +240,6 @@
                     };
                     mainList.appendChild(btn);
 
-                    // 관리자 리스트 (수정/삭제 추가)
                     adminList.innerHTML += `
                         <div class="flex justify-between items-center bg-white p-3 border rounded-2xl">
                             <div><b class="text-blue-900">${d.name}</b> <span class="text-xs text-slate-400">(${d.desc})</span></div>
@@ -207,7 +252,6 @@
                 });
             });
 
-            // 선생님 관리
             db.ref('settings/teachers').on('value', snap => {
                 window.allTeachers = snap.val() || {};
                 renderTeachers();
@@ -215,7 +259,6 @@
                 renderTimeline();
             });
 
-            // 전체 예약 실시간 갱신
             db.ref('appointments').on('value', () => {
                 refreshAdminTable();
                 renderTimeline();
@@ -223,6 +266,12 @@
         }
 
         // --- 관리자 전용 로직 ---
+        function updateDeadline() {
+            const newDeadline = document.getElementById('adminDeadlineInput').value;
+            if(!newDeadline) return alert("마감 시간을 선택하세요.");
+            db.ref('settings/deadline').set(newDeadline).then(() => alert("예약 마감 시간이 저장되었습니다."));
+        }
+
         function updateNotice() { db.ref('settings/notice').set(document.getElementById('adminNoticeInput').value).then(() => alert("공지사항이 업데이트되었습니다.")); }
         
         function saveDate() {
@@ -286,7 +335,6 @@
             });
         }
 
-        // 가로 타임라인 그래프 렌더링
         function renderTimeline() {
             const labels = document.getElementById('timelineTimeLabels');
             const rows = document.getElementById('timelineRows');
@@ -362,6 +410,7 @@
         }
 
         function prepareEdit() {
+            if(isDeadlinePassed) return alert("예약 가능 시간이 지나 수정할 수 없습니다.");
             db.ref(`appointments/${existingKey}`).once('value', snap => {
                 const app = snap.val();
                 selection.items = [...app.items];
@@ -389,6 +438,7 @@
         }
 
         function openSlots(teacher) {
+            if(isDeadlinePassed) return alert("예약 가능 시간이 지나 선택할 수 없습니다.");
             const idx = selection.items.findIndex(i => i.teacher === teacher.name);
             if(idx > -1) { if(confirm("선택된 상담을 취소하거나 변경하시겠습니까?")) selection.items.splice(idx, 1); else return; }
             
@@ -422,6 +472,7 @@
         }
 
         function submitReservation() {
+            if(isDeadlinePassed) return alert("예약 가능 시간이 지나 저장할 수 없습니다.");
             if(selection.items.length === 0) return alert("상담 일정을 선택해 주세요.");
             const ref = existingKey ? db.ref(`appointments/${existingKey}`) : db.ref('appointments').push();
             ref.set(selection).then(() => { alert("저장이 완료되었습니다."); location.reload(); });
