@@ -56,7 +56,10 @@
         
         <div id="step2Section" class="step-inactive mb-10">
             <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                <input type="text" id="stuLevel" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); checkStep2();" placeholder="레벨 (예) 2A" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+                <input type="text" id="stuLevel" 
+       oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); checkStep2();" 
+       placeholder="레벨 (예: 2A)" 
+       class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
                 <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
                 <input type="tel" 
        id="parentPhone" 
