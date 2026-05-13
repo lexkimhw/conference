@@ -60,7 +60,9 @@
        oninput="checkStep2();" 
        placeholder="레벨 입력 (예) 2A" 
        class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
-                <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+                <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" ...>
+
+<input type="text" id="stuKrName" oninput="this.value=this.value.replace(/[^ㄱ-ㅎㅏ-ㅣ가-힣]/g, ''); checkStep2();" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
                 <input type="tel" 
        id="parentPhone" 
        oninput="formatPhone(this); checkStep2();" 
@@ -419,9 +421,13 @@
 
         // --- 메인 예약 기능 로직 ---
 function checkStep2() {
-    // 입력값 그대로 가져오기 (공백만 제거)
+    // 한글 이름 필드에서 한글이 아닌 모든 문자 제거 로직 추가
+    const krNameInput = document.getElementById('stuKrName');
+    krNameInput.value = krNameInput.value.replace(/[^ㄱ-ㅎㅏ-ㅣ가-힣]/g, '');
+
+    // 기존 데이터 가져오기 로직
     selection.level = document.getElementById('stuLevel').value.trim();
-    selection.krName = document.getElementById('stuKrName').value.trim();
+    selection.krName = krNameInput.value.trim();
     selection.parentPhone = document.getElementById('parentPhone').value.trim();
     
     // 휴대폰 번호 유효성 검사 (010-0000-0000 형식일 때만 다음 단계 오픈)
@@ -558,7 +564,7 @@ function checkStep2() {
         : "상담 시간을 선택해 주세요.";
     
     document.getElementById('captureBtn').classList.toggle('hidden', selection.items.length === 0);
-}
+}gksrmf
 
         function submitReservation() {
             if(!checkDeadlineStatus()) return alert("죄송합니다. 예약 및 수정 가능 시간이 종료되었습니다.");
