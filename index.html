@@ -18,52 +18,55 @@
         .available:hover { background-color: #1e3a8a; color: white; border-color: #1e3a8a; }
         .reserved { background-color: #cbd5e1 !important; color: #94a3b8 !important; cursor: not-allowed !important; pointer-events: none !important; }
         
-       /* 타임라인 정렬 수정 */
-.timeline-container { position: relative; margin-top: 20px; overflow-x: auto; }
-.timeline-header { 
-    display: flex; 
-    margin-left: 140px; /* 선생님 이름 영역만큼 띄움 */
-    border-bottom: 1px solid #e2e8f0; 
-}
-.timeline-time-label { 
-    width: 40px; /* 셀 하나당 너비 고정 */
-    flex-shrink: 0; 
-    text-align: center; 
-    font-size: 9px; 
-    color: #64748b; 
-    font-weight: bold; 
-    transform: rotate(-45deg); 
-    height: 40px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-}
-.timeline-row { display: flex; align-items: center; margin-bottom: 8px; }
-.timeline-teacher-name { 
-    width: 140px; 
-    flex-shrink: 0; 
-    font-size: 11px; 
-    font-weight: 900; 
-    color: #1e293b; 
-    padding-right: 10px; 
-}
-.timeline-bar { 
-    display: flex; 
-    height: 24px; 
-    border-radius: 4px; 
-    overflow: hidden; 
-    background: #f1f5f9; 
-    border: 1px solid #e2e8f0; 
-}
-.timeline-cell { 
-    width: 40px; /* 헤더의 라벨 너비와 동일하게 설정 */
-    flex-shrink: 0; 
-    height: 100%; 
-    border-right: 1px solid rgba(255,255,255,0.4); 
-}
+        /* 타임라인 정렬 핵심 스타일 */
+        .timeline-container { position: relative; margin-top: 20px; min-width: fit-content; }
+        .timeline-header { 
+            display: flex; 
+            margin-left: 140px; /* 선생님 이름 너비와 일치 */
+            border-bottom: 1px solid #e2e8f0; 
+        }
+        .timeline-time-label { 
+            width: 40px; /* 셀 너비 고정 */
+            flex-shrink: 0; 
+            text-align: center; 
+            font-size: 9px; 
+            color: #64748b; 
+            font-weight: bold; 
+            transform: rotate(-45deg); 
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .timeline-row { display: flex; align-items: center; margin-bottom: 8px; }
+        .timeline-teacher-name { 
+            width: 140px; /* 이름 너비 고정 */
+            flex-shrink: 0;
+            font-size: 11px; 
+            font-weight: 900; 
+            color: #1e293b; 
+            padding-right: 10px; 
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .timeline-bar { 
+            display: flex; 
+            height: 24px; 
+            border-radius: 4px; 
+            overflow: hidden; 
+            background: #f1f5f9; 
+            border: 1px solid #e2e8f0; 
+        }
+        .timeline-cell { 
+            width: 40px; /* 라벨 너비와 정확히 일치 */
+            flex-shrink: 0; 
+            height: 100%; 
+            border-right: 1px solid rgba(255,255,255,0.4); 
+        }
+        .cell-reserved { background-color: #ef4444 !important; }
+        .cell-free { background-color: #10b981 !important; }
 
-
-        /* 마감 스타일 */
         .btn-disabled { opacity: 0.5; cursor: not-allowed !important; pointer-events: none !important; }
     </style>
 </head>
@@ -90,17 +93,9 @@
         
         <div id="step2Section" class="step-inactive mb-10">
             <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                <input type="text" id="stuLevel" 
-       oninput="checkStep2();" 
-       placeholder="레벨 입력 (예) 2A" 
-       class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+                <input type="text" id="stuLevel" oninput="checkStep2();" placeholder="레벨 입력 (예) 2A" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
                 <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
-                <input type="tel" 
-       id="parentPhone" 
-       oninput="formatPhone(this); checkStep2();" 
-       maxlength="13" 
-       placeholder="부모님 휴대폰" 
-       class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+                <input type="tel" id="parentPhone" oninput="formatPhone(this); checkStep2();" maxlength="13" placeholder="부모님 휴대폰" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
             </div>
             <div id="existingReservationArea" class="hidden bg-blue-50 border border-blue-200 p-6 rounded-2xl mb-4">
                 <h4 class="font-black text-blue-900 mb-2">💡 이미 등록된 예약 정보가 있습니다.</h4>
@@ -130,7 +125,7 @@
     <div id="adminModal" class="fixed inset-0 bg-slate-900/90 hidden z-[100] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-6xl h-[90vh] rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl">
             <div class="p-6 border-b flex justify-between items-center bg-slate-50">
-                <h2 class="text-xl font-black italic text-blue-900">관리자 모드</h2>
+                <h2 class="text-xl font-black italic text-blue-900">ADMIN CONTROL PANEL</h2>
                 <button onclick="closeAdmin()" class="text-3xl text-slate-400">&times;</button>
             </div>
             
@@ -141,7 +136,6 @@
                         <input type="datetime-local" id="adminDeadlineInput" class="flex-1 p-3 border rounded-xl outline-none focus:border-amber-500">
                         <button onclick="updateDeadline()" class="bg-amber-600 text-white px-8 rounded-xl font-black">시한 저장</button>
                     </div>
-                    <p class="text-[10px] text-amber-700 mt-2">* 설정한 시간이 지나면 모든 예약 및 수정 버튼이 자동으로 비활성화됩니다.</p>
                 </section>
 
                 <section class="bg-blue-50 p-6 rounded-3xl border border-blue-100">
@@ -205,7 +199,7 @@
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div id="selectionSummary" class="text-blue-900 font-black text-lg italic underline">정보를 입력해 주세요.</div>
             <div class="flex gap-2">
-                <button id="captureBtn" onclick="captureResult()" class="hidden bg-amber-500 text-white px-6 py-4 rounded-2xl font-black">저장하기전 예약 확인증 받기 (png 그림 파일로 저장됨)(</button>
+                <button id="captureBtn" onclick="captureResult()" class="hidden bg-amber-500 text-white px-6 py-4 rounded-2xl font-black">예약 확인증 받기</button>
                 <button id="confirmBtn" onclick="submitReservation()" class="bg-blue-900 text-white px-10 py-4 rounded-2xl font-black">현재 상태 저장 하고 나가기</button>
             </div>
         </div>
@@ -221,30 +215,25 @@
         let reservationDeadline = null;
 
         function initApp() {
-            // 마감 시간 체크
             db.ref('settings/deadline').on('value', snap => {
                 reservationDeadline = snap.val();
                 renderDeadline();
                 checkDeadlineStatus();
             });
 
-            // 공지사항
             db.ref('settings/notice').on('value', snap => {
                 const notice = snap.val() || "등록된 공지가 없습니다.";
                 document.getElementById('displayNotice').innerText = notice;
                 document.getElementById('adminNoticeInput').value = notice;
             });
             
-            // 회차/일정
             db.ref('settings/dates').on('value', snap => {
                 const dates = snap.val() || {};
                 const mainList = document.getElementById('dateList');
                 const adminList = document.getElementById('adminDateList');
                 const selectBox = document.getElementById('newTeacherDateRef');
-                
                 mainList.innerHTML = ''; adminList.innerHTML = '';
                 selectBox.innerHTML = '<option value="">회차 선택</option>';
-                
                 Object.keys(dates).forEach(key => {
                     const d = dates[key];
                     const btn = document.createElement('button');
@@ -258,45 +247,30 @@
                         checkStep2();
                     };
                     mainList.appendChild(btn);
-
-                    adminList.innerHTML += `
-                        <div class="flex justify-between items-center bg-white p-3 border rounded-2xl">
-                            <div><b class="text-blue-900">${d.name}</b> <span class="text-xs text-slate-400">(${d.desc})</span></div>
-                            <div class="flex gap-2">
-                                <button onclick="editDate('${key}', '${d.name}', '${d.desc}')" class="text-xs font-bold text-blue-500">수정</button>
-                                <button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/dates/${key}').remove()" class="text-xs font-bold text-red-500">삭제</button>
-                            </div>
-                        </div>`;
+                    adminList.innerHTML += `<div class="flex justify-between items-center bg-white p-3 border rounded-2xl"><div><b class="text-blue-900">${d.name}</b> <span class="text-xs text-slate-400">(${d.desc})</span></div><div class="flex gap-2"><button onclick="editDate('${key}', '${d.name}', '${d.desc}')" class="text-xs font-bold text-blue-500">수정</button><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/dates/${key}').remove()" class="text-xs font-bold text-red-500">삭제</button></div></div>`;
                     selectBox.innerHTML += `<option value="${d.name}">${d.name}</option>`;
                 });
             });
 
-            // 선생님 관리
             db.ref('settings/teachers').on('value', snap => {
                 window.allTeachers = snap.val() || {};
                 renderTeachers();
                 renderAdminTeachers();
-                renderTimeline();
+                renderTimeline(); // 데이터 로드 후 타임라인 갱신
             });
 
-            // 전체 예약 실시간 갱신
             db.ref('appointments').on('value', () => {
                 refreshAdminTable();
-                renderTimeline();
+                renderTimeline(); // 예약 변경 시 타임라인 실시간 갱신
             });
 
-            // 1분마다 마감 상태 체크
             setInterval(checkDeadlineStatus, 60000);
         }
 
-         // 휴대폰 자동 하이픈 로직
         function formatPhone(target) {
-            target.value = target.value
-                .replace(/[^0-9]/g, '')
-                .replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, "$1-$2-$3").replace(/\-{1,2}$/g, "");
+            target.value = target.value.replace(/[^0-9]/g, '').replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, "$1-$2-$3").replace(/\-{1,2}$/g, "");
         }
 
-        // --- 마감 시한 로직 ---
         function renderDeadline() {
             if (reservationDeadline) {
                 const d = new Date(reservationDeadline);
@@ -313,17 +287,14 @@
             const deadline = new Date(reservationDeadline);
             const confirmBtn = document.getElementById('confirmBtn');
             const editBtn = document.getElementById('editBtn');
-
             if (now > deadline) {
                 confirmBtn.innerText = "예약이 마감되었습니다";
                 confirmBtn.classList.add('btn-disabled', 'bg-slate-400');
-                confirmBtn.classList.remove('bg-blue-900');
                 if(editBtn) editBtn.classList.add('hidden');
                 return false;
             } else {
                 confirmBtn.innerText = "현재 상태 저장 하고 나가기";
                 confirmBtn.classList.remove('btn-disabled', 'bg-slate-400');
-                confirmBtn.classList.add('bg-blue-900');
                 if(editBtn) editBtn.classList.remove('hidden');
                 return true;
             }
@@ -335,14 +306,13 @@
             db.ref('settings/deadline').set(val).then(() => alert("마감 시한이 업데이트되었습니다."));
         }
 
-        // --- 관리자 전용 로직 ---
-        function updateNotice() { db.ref('settings/notice').set(document.getElementById('adminNoticeInput').value).then(() => alert("공지사항이 업데이트되었습니다.")); }
+        function updateNotice() { db.ref('settings/notice').set(document.getElementById('adminNoticeInput').value).then(() => alert("공지사항 업데이트 완료")); }
         
         function saveDate() {
             const key = document.getElementById('editDateKey').value;
             const name = document.getElementById('newDateName').value;
             const desc = document.getElementById('newDateDesc').value;
-            if(!name) return alert("회차명을 입력하세요.");
+            if(!name) return alert("회차명 입력 필수");
             const ref = key ? db.ref(`settings/dates/${key}`) : db.ref('settings/dates').push();
             ref.set({ name, desc }).then(() => {
                 document.getElementById('editDateKey').value = '';
@@ -363,7 +333,7 @@
             const dateRef = document.getElementById('newTeacherDateRef').value;
             const name = document.getElementById('newTeacherName').value;
             const levels = document.getElementById('newTeacherLevels').value.split(',').map(s => s.trim());
-            if(!dateRef || !name) return alert("필수 정보를 입력하세요.");
+            if(!dateRef || !name) return alert("필수 정보 입력");
             const ref = key ? db.ref(`settings/teachers/${key}`) : db.ref('settings/teachers').push();
             ref.set({ dateRef, name, levels }).then(() => {
                 document.getElementById('editTeacherKey').value = '';
@@ -384,75 +354,63 @@
             list.innerHTML = '';
             Object.keys(window.allTeachers).forEach(key => {
                 const t = window.allTeachers[key];
-                list.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm">
-                        <div>
-                            <div class="text-[10px] text-blue-600 font-bold">${t.dateRef}</div>
-                            <div class="font-black text-slate-800">${t.name} 선생님</div>
-                            <div class="text-[9px] text-slate-400">${t.levels.join(', ')}</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="editTeacher('${key}', '${t.dateRef}', '${t.name}', '${t.levels}')" class="text-[10px] font-bold text-blue-500">수정</button>
-                            <button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/teachers/${key}').remove()" class="text-[10px] font-bold text-red-500">삭제</button>
-                        </div>
-                    </div>`;
+                list.innerHTML += `<div class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm"><div><div class="text-[10px] text-blue-600 font-bold">${t.dateRef}</div><div class="font-black text-slate-800">${t.name} 선생님</div><div class="text-[9px] text-slate-400">${t.levels.join(', ')}</div></div><div class="flex gap-2"><button onclick="editTeacher('${key}', '${t.dateRef}', '${t.name}', '${t.levels}')" class="text-[10px] font-bold text-blue-500">수정</button><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/teachers/${key}').remove()" class="text-[10px] font-bold text-red-500">삭제</button></div></div>`;
             });
         }
 
-       function renderTimeline() {
-    const labels = document.getElementById('timelineTimeLabels');
-    const rows = document.getElementById('timelineRows');
-    labels.innerHTML = ''; rows.innerHTML = '';
+        // --- 수정된 타임라인 함수 ---
+        function renderTimeline() {
+            const labels = document.getElementById('timelineTimeLabels');
+            const rows = document.getElementById('timelineRows');
+            if (!labels || !rows) return;
+            labels.innerHTML = ''; rows.innerHTML = '';
 
-    db.ref('appointments').once('value', snap => {
-        const appointments = snap.val() || {};
-        const times = [];
-        
-        // 10:20부터 12:55까지 5분 단위 시간 배열 생성
-        let startTime = new Date(); startTime.setHours(10, 20, 0, 0);
-        let endTime = new Date(); endTime.setHours(12, 55, 0, 0);
-        
-        let curr = new Date(startTime);
-        while(curr <= endTime) {
-            const tStr = curr.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
-            times.push(tStr);
-            
-            // 상단 시간 라벨 추가
-            const lbl = document.createElement('div');
-            lbl.className = "timeline-time-label";
-            lbl.innerText = tStr;
-            labels.appendChild(lbl);
-            
-            curr.setMinutes(curr.getMinutes() + 5);
-        }
+            // 데이터가 없으면 종료
+            if (!window.allTeachers) return;
 
-        // 각 선생님별 행 생성
-        Object.values(window.allTeachers).forEach(t => {
-            const row = document.createElement('div'); 
-            row.className = "timeline-row";
-            row.innerHTML = `<div class="timeline-teacher-name">[${t.dateRef}] ${t.name}</div>`;
-            
-            const bar = document.createElement('div'); 
-            bar.className = "timeline-bar";
-            
-            // 생성된 times 배열과 1:1 매칭하여 셀 생성
-            times.forEach(time => {
-                const isReserved = Object.values(appointments).some(app => 
-                    app.date === t.dateRef && 
-                    app.items && 
-                    app.items.some(i => i.teacher === t.name && i.time === time)
-                );
+            db.ref('appointments').once('value', snap => {
+                const appointments = snap.val() || {};
+                const times = [];
                 
-                const cell = document.createElement('div');
-                cell.className = `timeline-cell ${isReserved ? 'cell-reserved' : 'cell-free'}`;
-                bar.appendChild(cell);
+                // 1. 시간 축 배열 및 라벨 생성 (10:20 ~ 12:55)
+                let startTime = new Date(); startTime.setHours(10, 20, 0, 0);
+                let endTime = new Date(); endTime.setHours(12, 55, 0, 0);
+                let curr = new Date(startTime);
+                
+                while(curr <= endTime) {
+                    const tStr = curr.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                    times.push(tStr);
+                    const lbl = document.createElement('div');
+                    lbl.className = "timeline-time-label";
+                    lbl.innerText = tStr;
+                    labels.appendChild(lbl);
+                    curr.setMinutes(curr.getMinutes() + 5);
+                }
+
+                // 2. 선생님별 행 생성
+                Object.values(window.allTeachers).forEach(t => {
+                    const row = document.createElement('div');
+                    row.className = "timeline-row";
+                    row.innerHTML = `<div class="timeline-teacher-name">[${t.dateRef}] ${t.name}</div>`;
+                    
+                    const bar = document.createElement('div');
+                    bar.className = "timeline-bar";
+                    
+                    times.forEach(time => {
+                        const isReserved = Object.values(appointments).some(app => 
+                            String(app.date) === String(t.dateRef) && 
+                            app.items && 
+                            app.items.some(i => i.teacher === t.name && i.time === time)
+                        );
+                        const cell = document.createElement('div');
+                        cell.className = `timeline-cell ${isReserved ? 'cell-reserved' : 'cell-free'}`;
+                        bar.appendChild(cell);
+                    });
+                    row.appendChild(bar);
+                    rows.appendChild(row);
+                });
             });
-            
-            row.appendChild(bar); 
-            rows.appendChild(row);
-        });
-    });
-}
+        }
 
         function refreshAdminTable() {
             const body = document.getElementById('adminBody');
@@ -461,76 +419,52 @@
                 const data = snap.val() || {};
                 Object.keys(data).forEach(key => {
                     const a = data[key];
-                    a.items.forEach(i => {
-                        body.innerHTML += `<tr>
-                            <td class="p-3">${a.date}</td><td class="p-3">${a.level}</td><td class="p-3 font-black">${a.krName}</td>
-                            <td class="p-3">${a.parentPhone}</td><td class="p-3 text-blue-600 font-bold">${i.teacher}</td><td class="p-3 font-bold">${i.time}</td>
-                            <td class="p-3"><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('appointments/${key}').remove()" class="text-red-500 font-bold">삭제</button></td>
-                        </tr>`;
-                    });
+                    if (a.items) {
+                        a.items.forEach(i => {
+                            body.innerHTML += `<tr><td class="p-3">${a.date}</td><td class="p-3">${a.level}</td><td class="p-3 font-black">${a.krName}</td><td class="p-3">${a.parentPhone}</td><td class="p-3 text-blue-600 font-bold">${i.teacher}</td><td class="p-3 font-bold">${i.time}</td><td class="p-3"><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('appointments/${key}').remove()" class="text-red-500 font-bold">삭제</button></td></tr>`;
+                        });
+                    }
                 });
             });
         }
 
-        // --- 메인 예약 기능 로직 ---
-function checkStep2() {
-    // 입력값 그대로 가져오기 (공백만 제거)
-    selection.level = document.getElementById('stuLevel').value.trim();
-    selection.krName = document.getElementById('stuKrName').value.trim();
-    selection.parentPhone = document.getElementById('parentPhone').value.trim();
-    
-    // 휴대폰 번호 유효성 검사 (010-0000-0000 형식일 때만 다음 단계 오픈)
-    const isPhoneValid = /^010-\d{4}-\d{4}$/.test(selection.parentPhone);
-
-    if(selection.level && selection.krName && isPhoneValid) {
-        // 마감 시한 체크 (마감되었으면 진행 불가)
-        if (!checkDeadlineStatus()) {
-            document.getElementById('step3Section').classList.add('step-inactive');
-            return;
+        function checkStep2() {
+            selection.level = document.getElementById('stuLevel').value.trim();
+            selection.krName = document.getElementById('stuKrName').value.trim();
+            selection.parentPhone = document.getElementById('parentPhone').value.trim();
+            const isPhoneValid = /^010-\d{4}-\d{4}$/.test(selection.parentPhone);
+            if(selection.level && selection.krName && isPhoneValid) {
+                if (!checkDeadlineStatus()) return;
+                db.ref('appointments').once('value', snap => {
+                    const data = snap.val() || {};
+                    existingKey = Object.keys(data).find(k => data[k].level === selection.level && data[k].krName === selection.krName && data[k].parentPhone === selection.parentPhone);
+                    if(existingKey) {
+                        const app = data[existingKey];
+                        document.getElementById('existingReservationArea').classList.remove('hidden');
+                        document.getElementById('existingDetails').innerHTML = `<b>회차:</b> ${app.date} | <b>내역:</b> ${app.items.map(i => `${i.teacher}(${i.time})`).join(', ')}`;
+                    } else {
+                        document.getElementById('existingReservationArea').classList.add('hidden');
+                    }
+                });
+                document.getElementById('step3Section').classList.remove('step-inactive');
+                renderTeachers();
+            } else {
+                document.getElementById('step3Section').classList.add('step-inactive');
+            }
+            updateSummary();
         }
 
-        db.ref('appointments').once('value', snap => {
-            const data = snap.val() || {};
-            existingKey = Object.keys(data).find(k => 
-                data[k].level === selection.level && 
-                data[k].krName === selection.krName && 
-                data[k].parentPhone === selection.parentPhone
-            );
+        function prepareEdit() {
+            if(!checkDeadlineStatus()) return alert("수정 불가");
+            db.ref(`appointments/${existingKey}`).once('value', snap => {
+                const app = snap.val();
+                selection.items = [...app.items];
+                selection.date = app.date;
+                renderTeachers();
+                alert("수정 모드 활성화");
+            });
+        }
 
-            if(existingKey) {
-                const app = data[existingKey];
-                const itemDetails = app.items.map(i => `${i.teacher} 선생님(${i.time})`).join(', ');
-                document.getElementById('existingReservationArea').classList.remove('hidden');
-                document.getElementById('existingDetails').innerHTML = `
-                    <div class="mb-1"><b>📅 예약 회차:</b> ${app.date}</div>
-                    <div><b>⏰ 예약 내역:</b> <span class="text-blue-700 font-bold">${itemDetails}</span></div>
-                `;
-            } else {
-                document.getElementById('existingReservationArea').classList.add('hidden');
-            }
-        });
-
-        document.getElementById('step3Section').classList.remove('step-inactive');
-        renderTeachers();
-    } else {
-        document.getElementById('step3Section').classList.add('step-inactive');
-    }
-    updateSummary();
-   }
-
-     function prepareEdit() {
-    // 마감 시한 체크 로직 추가
-    if(!checkDeadlineStatus()) return alert("예약 수정 가능 시간이 종료되었습니다.");
-    
-    db.ref(`appointments/${existingKey}`).once('value', snap => {
-        const app = snap.val();
-        selection.items = [...app.items];
-        selection.date = app.date;
-        renderTeachers();
-        document.getElementById('step3Section').scrollIntoView({ behavior: 'smooth' });
-        alert("수정 모드가 활성화되었습니다. 선생님을 다시 선택하여 예약 시간을 변경하세요.");
-    });
-    }
         function renderTeachers() {
             const list = document.getElementById('teacherList');
             list.innerHTML = '';
@@ -547,77 +481,50 @@ function checkStep2() {
             });
         }
 
-       function openSlots(teacher) {
-    // 1. 이미 이 선생님이 선택되어 있는지 확인
-    const idx = selection.items.findIndex(i => i.teacher === teacher.name);
-    
-    // 2. 이미 선택된 선생님을 다시 클릭한 경우 -> 선택 취소(삭제) 처리
-    if (idx > -1) {
-        if (confirm(`${teacher.name} 선생님 상담 예약을 취소하시겠습니까?`)) {
-            selection.items.splice(idx, 1); // 리스트에서 삭제
-            renderTeachers(); // 선생님 리스트 새로고침 (UI 반영)
-            updateSummary();  // 하단 요약 바 갱신
+        function openSlots(teacher) {
+            const idx = selection.items.findIndex(i => i.teacher === teacher.name);
+            if (idx > -1) {
+                if (confirm('취소하시겠습니까?')) {
+                    selection.items.splice(idx, 1);
+                    renderTeachers(); updateSummary();
+                }
+                return;
+            }
+            if (selection.items.length >= 2) return alert("최대 2명 가능");
+            document.getElementById('step4Section').classList.remove('hidden');
+            const grid = document.getElementById('timeGrid'); grid.innerHTML = '';
+            let c = new Date(); c.setHours(10, 20, 0, 0);
+            while(c <= new Date().setHours(12, 55, 0, 0)) {
+                const ts = c.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                const slot = document.createElement('button');
+                slot.className = "time-slot p-2 text-center text-[10px] font-bold rounded-lg available";
+                slot.innerText = ts;
+                slot.onclick = () => {
+                    selection.items.push({ teacher: teacher.name, time: ts });
+                    document.getElementById('step4Section').classList.add('hidden'); 
+                    renderTeachers(); updateSummary();
+                };
+                grid.appendChild(slot);
+                c.setMinutes(c.getMinutes() + 5);
+            }
+            db.ref('appointments').once('value', snap => {
+                const data = snap.val() || {};
+                document.querySelectorAll('.time-slot').forEach(s => {
+                    if (Object.values(data).some(app => app.date === selection.date && app.items?.some(i => i.teacher === teacher.name && i.time === s.innerText))) s.classList.add('reserved');
+                });
+            });
         }
-        return; // 시간 선택창을 띄우지 않고 종료
-    }
-
-    // 3. 새로 다른 선생님을 선택하려는 경우 -> 최대 2명 제한 체크
-    if (selection.items.length >= 2) {
-        alert("한 학생당 최대 2명의 선생님까지 예약 가능합니다. 다른 선생님으로 변경하려면 기존 예약을 먼저 클릭하여 취소해 주세요.");
-        return;
-    }
-
-    // 4. 새로운 선생님 시간 선택창 활성화
-    document.getElementById('step4Section').classList.remove('hidden');
-    const grid = document.getElementById('timeGrid'); 
-    grid.innerHTML = '';
-    
-    let c = new Date(); 
-    c.setHours(10, 20, 0, 0);
-    
-    while(c <= new Date().setHours(12, 55, 0, 0)) {
-        const ts = c.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
-        const slot = document.createElement('button');
-        slot.className = "time-slot p-2 text-center text-[10px] font-bold rounded-lg available";
-        slot.innerText = ts;
-        
-        slot.onclick = () => {
-            // 시간 선택 시 데이터 추가
-            selection.items.push({ teacher: teacher.name, time: ts });
-            document.getElementById('step4Section').classList.add('hidden'); 
-            renderTeachers(); 
-            updateSummary();
-        };
-        grid.appendChild(slot);
-        c.setMinutes(c.getMinutes() + 5);
-    }
-
-    // 5. 이미 다른 사람이 예약한 시간 체크 (실시간)
-    db.ref('appointments').once('value', snap => {
-        const data = snap.val() || {};
-        document.querySelectorAll('.time-slot').forEach(s => {
-            const isTaken = Object.values(data).some(app => 
-                app.date === selection.date && 
-                app.items && 
-                app.items.some(i => i.teacher === teacher.name && i.time === s.innerText)
-            );
-            if (isTaken) s.classList.add('reserved');
-        });
-    });
-   }
-
 
         function updateSummary() {
-            document.getElementById('selectionSummary').innerText = selection.items.length > 0 ? `${selection.krName} 학생 | ${selection.items.map(i=>`${i.teacher}(${i.time})`).join(', ')}` : "상담 시간을 선택해 주세요.";
+            document.getElementById('selectionSummary').innerText = selection.items.length > 0 ? `${selection.krName} | ${selection.items.map(i=>`${i.teacher}(${i.time})`).join(', ')}` : "상담 시간을 선택해 주세요.";
             document.getElementById('captureBtn').classList.toggle('hidden', selection.items.length === 0);
         }
 
         function submitReservation() {
-            if(!checkDeadlineStatus()) return alert("죄송합니다. 예약 및 수정 가능 시간이 종료되었습니다.");
-            
-            if(selection.items.length === 0) return alert("상담 일정을 선택해 주세요.");
+            if(!checkDeadlineStatus()) return alert("마감됨");
+            if(selection.items.length === 0) return alert("일정 선택 필수");
             const ref = existingKey ? db.ref(`appointments/${existingKey}`) : db.ref('appointments').push();
-            ref.set(selection).then(() => { alert("저장이 완료되었습니다."); location.reload(); });
+            ref.set(selection).then(() => { alert("저장 완료"); location.reload(); });
         }
 
         async function captureResult() {
@@ -626,7 +533,6 @@ function checkStep2() {
             document.getElementById('capStudent').innerText = `${selection.krName} (${selection.level})`;
             const tDiv = document.getElementById('capTeachers'); tDiv.innerHTML = '';
             selection.items.forEach(i => tDiv.innerHTML += `<div class="bg-slate-50 p-3 rounded-xl flex justify-between font-bold"><span>${i.teacher}</span><span class="text-blue-600">${i.time}</span></div>`);
-            
             card.classList.remove('hidden');
             const canvas = await html2canvas(card, { scale: 2 });
             const link = document.createElement('a'); link.download = `렉스김예약_${selection.krName}.png`;
@@ -634,26 +540,15 @@ function checkStep2() {
             card.classList.add('hidden');
         }
 
-       function openAdmin() {
-    const input = prompt("관리자 비밀번호를 입력하세요.");
-    if (!input) return;
-
-    // DB에서 저장된 암호를 한 번만 가져와서 비교합니다.
-    db.ref('settings/adminPw').once('value', snap => {
-        const savedPw = snap.val();
-        
-        // 입력값이 DB에 저장된 암호와 일치하는지 확인
-        // (숫자와 문자열 차이를 방지하기 위해 toString() 사용)
-        if (savedPw && input === savedPw.toString()) {
-            document.getElementById('adminModal').classList.remove('hidden');
-        } else {
-            alert("비밀번호가 일치하지 않습니다.");
+        function openAdmin() {
+            const input = prompt("관리자 PW");
+            db.ref('settings/adminPw').once('value', snap => {
+                if (snap.val() && input === snap.val().toString()) {
+                    document.getElementById('adminModal').classList.remove('hidden');
+                    renderTimeline(); // 모달 열 때 타임라인 최신화
+                } else alert("비밀번호 불일치");
+            });
         }
-    }).catch(err => {
-        console.error("암호 불러오기 실패:", err);
-        alert("관리자 인증 중 오류가 발생했습니다.");
-    });
-   }
 
         function closeAdmin() { document.getElementById('adminModal').classList.add('hidden'); }
         function resetAll() { if(confirm("초기화하시겠습니까?")) location.reload(); }
