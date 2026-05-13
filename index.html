@@ -58,7 +58,12 @@
             <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                 <input type="text" id="stuLevel" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); checkStep2();" placeholder="레벨 (예) 2A" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
                 <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
-                <input type="tel" id="parentPhone" oninput="checkStep2()" placeholder="부모님 연락처 (예) 010-7777-7777" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+                <input type="tel" 
+       id="parentPhone" 
+       oninput="formatPhone(this); checkStep2();" 
+       maxlength="13" 
+       placeholder="부모님 휴대폰" 
+       class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
             </div>
             <div id="existingReservationArea" class="hidden bg-blue-50 border border-blue-200 p-6 rounded-2xl mb-4">
                 <h4 class="font-black text-blue-900 mb-2">💡 이미 등록된 예약 정보가 있습니다.</h4>
@@ -247,6 +252,13 @@
             setInterval(checkDeadlineStatus, 60000);
         }
 
+         // 휴대폰 자동 하이픈 로직
+        function formatPhone(target) {
+            target.value = target.value
+                .replace(/[^0-9]/g, '')
+                .replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, "$1-$2-$3").replace(/\-{1,2}$/g, "");
+        }
+
         // --- 마감 시한 로직 ---
         function renderDeadline() {
             if (reservationDeadline) {
@@ -403,41 +415,60 @@
         }
 
         // --- 메인 예약 기능 로직 ---
-        function checkStep2() {
-            selection.level = document.getElementById('stuLevel').value.trim();
-            selection.krName = document.getElementById('stuKrName').value.trim();
-            selection.parentPhone = document.getElementById('parentPhone').value.trim();
-            if(selection.level && selection.krName && selection.parentPhone) {
-                db.ref('appointments').once('value', snap => {
-                    const data = snap.val() || {};
-                    existingKey = Object.keys(data).find(k => data[k].level === selection.level && data[k].krName === selection.krName && data[k].parentPhone === selection.parentPhone);
-                    if(existingKey) {
-                        document.getElementById('existingReservationArea').classList.remove('hidden');
-                        document.getElementById('existingDetails').innerText = `기존 예약: ${data[existingKey].date} (${data[existingKey].items.map(i=>i.teacher).join(', ')})`;
-                        checkDeadlineStatus(); // 수정 버튼 숨김 여부 재확인
-                    } else {
-                        document.getElementById('existingReservationArea').classList.add('hidden');
-                    }
-                });
-                document.getElementById('step3Section').classList.remove('step-inactive');
-                renderTeachers();
+    function checkStep2() {
+    selection.level = document.getElementById('stuLevel').value.trim();
+    selection.krName = document.getElementById('stuKrName').value.trim();
+    selection.parentPhone = document.getElementById('parentPhone').value.trim();
+    
+    // 010-0000-0000 형식 검사
+    const isPhoneValid = /^010-\d{4}-\d{4}$/.test(selection.parentPhone);
+
+    if(selection.level && selection.krName && isPhoneValid) {
+        db.ref('appointments').once('value', snap => {
+            const data = snap.val() || {};
+            existingKey = Object.keys(data).find(k => 
+                data[k].level === selection.level && 
+                data[k].krName === selection.krName && 
+                data[k].parentPhone === selection.parentPhone
+            );
+
+            if(existingKey) {
+                const app = data[existingKey];
+                // 예약된 선생님과 시간 정보를 상세히 표시
+                const itemDetails = app.items.map(i => `${i.teacher} 선생님(${i.time})`).join(', ');
+                
+                document.getElementById('existingReservationArea').classList.remove('hidden');
+                document.getElementById('existingDetails').innerHTML = `
+                    <div class="mb-1"><b>📅 예약 회차:</b> ${app.date}</div>
+                    <div><b>⏰ 예약 내역:</b> <span class="text-blue-700 font-bold">${itemDetails}</span></div>
+                `;
+                checkDeadlineStatus();
+            } else {
+                document.getElementById('existingReservationArea').classList.add('hidden');
             }
-            updateSummary();
-        }
+        });
+        document.getElementById('step3Section').classList.remove('step-inactive');
+        renderTeachers();
+    } else {
+        document.getElementById('step3Section').classList.add('step-inactive');
+    }
+    updateSummary();
+   }
 
-        function prepareEdit() {
-            if(!checkDeadlineStatus()) return alert("예약 수정 가능 시간이 종료되었습니다.");
-            
-            db.ref(`appointments/${existingKey}`).once('value', snap => {
-                const app = snap.val();
-                selection.items = [...app.items];
-                selection.date = app.date;
-                renderTeachers();
-                document.getElementById('step3Section').scrollIntoView({ behavior: 'smooth' });
-                alert("수정 모드가 활성화되었습니다. 선생님을 다시 선택하여 예약 시간을 변경하세요.");
-            });
-        }
 
+     function prepareEdit() {
+    // 마감 시한 체크 로직 추가
+    if(!checkDeadlineStatus()) return alert("예약 수정 가능 시간이 종료되었습니다.");
+    
+    db.ref(`appointments/${existingKey}`).once('value', snap => {
+        const app = snap.val();
+        selection.items = [...app.items];
+        selection.date = app.date;
+        renderTeachers();
+        document.getElementById('step3Section').scrollIntoView({ behavior: 'smooth' });
+        alert("수정 모드가 활성화되었습니다. 선생님을 다시 선택하여 예약 시간을 변경하세요.");
+    });
+    }
         function renderTeachers() {
             const list = document.getElementById('teacherList');
             list.innerHTML = '';
