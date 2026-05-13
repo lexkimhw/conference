@@ -423,7 +423,15 @@
     // 010-0000-0000 형식 검사
     const isPhoneValid = /^010-\d{4}-\d{4}$/.test(selection.parentPhone);
 
+    // 모든 정보가 입력되었고 핸드폰 번호가 유효할 때
     if(selection.level && selection.krName && isPhoneValid) {
+        // [추가된 로직] 마감 시간이 지났는지 먼저 확인
+        if (!checkDeadlineStatus()) {
+            // 마감되었다면 선생님 리스트를 보여주지 않고 함수 종료
+            document.getElementById('step3Section').classList.add('step-inactive');
+            return; 
+        }
+
         db.ref('appointments').once('value', snap => {
             const data = snap.val() || {};
             existingKey = Object.keys(data).find(k => 
@@ -434,7 +442,6 @@
 
             if(existingKey) {
                 const app = data[existingKey];
-                // 예약된 선생님과 시간 정보를 상세히 표시
                 const itemDetails = app.items.map(i => `${i.teacher} 선생님(${i.time})`).join(', ');
                 
                 document.getElementById('existingReservationArea').classList.remove('hidden');
@@ -442,19 +449,20 @@
                     <div class="mb-1"><b>📅 예약 회차:</b> ${app.date}</div>
                     <div><b>⏰ 예약 내역:</b> <span class="text-blue-700 font-bold">${itemDetails}</span></div>
                 `;
-                checkDeadlineStatus();
             } else {
                 document.getElementById('existingReservationArea').classList.add('hidden');
             }
         });
+
+        // 마감 전일 때만 선생님 리스트 활성화 및 렌더링
         document.getElementById('step3Section').classList.remove('step-inactive');
         renderTeachers();
     } else {
+        // 정보가 미입력되었거나 유효하지 않으면 비활성화
         document.getElementById('step3Section').classList.add('step-inactive');
     }
     updateSummary();
    }
-
 
      function prepareEdit() {
     // 마감 시한 체크 로직 추가
