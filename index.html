@@ -580,7 +580,27 @@
             card.classList.add('hidden');
         }
 
-        function openAdmin() { if(prompt("관리자 PW")==='5556575') document.getElementById('adminModal').classList.remove('hidden'); }
+       function openAdmin() {
+    const input = prompt("관리자 비밀번호를 입력하세요.");
+    if (!input) return;
+
+    // DB에서 저장된 암호를 한 번만 가져와서 비교합니다.
+    db.ref('settings/adminPw').once('value', snap => {
+        const savedPw = snap.val();
+        
+        // 입력값이 DB에 저장된 암호와 일치하는지 확인
+        // (숫자와 문자열 차이를 방지하기 위해 toString() 사용)
+        if (savedPw && input === savedPw.toString()) {
+            document.getElementById('adminModal').classList.remove('hidden');
+        } else {
+            alert("비밀번호가 일치하지 않습니다.");
+        }
+    }).catch(err => {
+        console.error("암호 불러오기 실패:", err);
+        alert("관리자 인증 중 오류가 발생했습니다.");
+    });
+   }
+
         function closeAdmin() { document.getElementById('adminModal').classList.add('hidden'); }
         function resetAll() { if(confirm("초기화하시겠습니까?")) location.reload(); }
         function exportToExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('adminTable')), "LEXKIM_RESERVATION.xlsx"); }
