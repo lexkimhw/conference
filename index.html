@@ -57,8 +57,8 @@
         <div id="step2Section" class="step-inactive mb-10">
             <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                 <input type="text" id="stuLevel" 
-       oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); checkStep2();" 
-       placeholder="레벨 (예: 2A)" 
+       oninput="checkStep2();" 
+       placeholder="레벨 입력 (예) 2A" 
        class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
                 <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
                 <input type="tel" 
@@ -418,21 +418,20 @@
         }
 
         // --- 메인 예약 기능 로직 ---
-    function checkStep2() {
+function checkStep2() {
+    // 입력값 그대로 가져오기 (공백만 제거)
     selection.level = document.getElementById('stuLevel').value.trim();
     selection.krName = document.getElementById('stuKrName').value.trim();
     selection.parentPhone = document.getElementById('parentPhone').value.trim();
     
-    // 010-0000-0000 형식 검사
+    // 휴대폰 번호 유효성 검사 (010-0000-0000 형식일 때만 다음 단계 오픈)
     const isPhoneValid = /^010-\d{4}-\d{4}$/.test(selection.parentPhone);
 
-    // 모든 정보가 입력되었고 핸드폰 번호가 유효할 때
     if(selection.level && selection.krName && isPhoneValid) {
-        // [추가된 로직] 마감 시간이 지났는지 먼저 확인
+        // 마감 시한 체크 (마감되었으면 진행 불가)
         if (!checkDeadlineStatus()) {
-            // 마감되었다면 선생님 리스트를 보여주지 않고 함수 종료
             document.getElementById('step3Section').classList.add('step-inactive');
-            return; 
+            return;
         }
 
         db.ref('appointments').once('value', snap => {
@@ -446,7 +445,6 @@
             if(existingKey) {
                 const app = data[existingKey];
                 const itemDetails = app.items.map(i => `${i.teacher} 선생님(${i.time})`).join(', ');
-                
                 document.getElementById('existingReservationArea').classList.remove('hidden');
                 document.getElementById('existingDetails').innerHTML = `
                     <div class="mb-1"><b>📅 예약 회차:</b> ${app.date}</div>
@@ -457,11 +455,9 @@
             }
         });
 
-        // 마감 전일 때만 선생님 리스트 활성화 및 렌더링
         document.getElementById('step3Section').classList.remove('step-inactive');
         renderTeachers();
     } else {
-        // 정보가 미입력되었거나 유효하지 않으면 비활성화
         document.getElementById('step3Section').classList.add('step-inactive');
     }
     updateSummary();
