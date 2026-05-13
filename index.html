@@ -553,9 +553,12 @@ function checkStep2() {
 
 
         function updateSummary() {
-            document.getElementById('selectionSummary').innerText = selection.items.length > 0 ? `${selection.krName} 학생 | ${selection.items.map(i=>`${i.teacher}(${i.time})`).join(', ')}` : "상담 시간을 선택해 주세요.";
-            document.getElementById('captureBtn').classList.toggle('hidden', selection.items.length === 0);
-        }
+            document.getElementById('selectionSummary').innerText = selection.items.length > 0 
+        ? `${selection.level} | ${selection.krName} 학생 | ${selection.items.map(i=>`${i.teacher}(${i.time})`).join(', ')}` 
+        : "상담 시간을 선택해 주세요.";
+    
+    document.getElementById('captureBtn').classList.toggle('hidden', selection.items.length === 0);
+}
 
         function submitReservation() {
             if(!checkDeadlineStatus()) return alert("죄송합니다. 예약 및 수정 가능 시간이 종료되었습니다.");
