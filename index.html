@@ -55,19 +55,24 @@
         <div id="dateList" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10"></div>
         
         <div id="step2Section" class="step-inactive mb-10">
-            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                <input type="text" id="stuLevel" 
-       oninput="this.value = this.value.toUpperCase(); checkStep2();" 
-       placeholder="레벨 입력 (예) 2A" 
-       class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
-                <input type="text" id="stuKrName" oninput="checkStep2()" lang="ko" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
-                <input type="tel" 
-       id="parentPhone" 
-       oninput="formatPhone(this); checkStep2();" 
-       maxlength="13" 
-       placeholder="부모님 휴대폰" 
-       class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
-            </div>
+    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
+        <input type="text" id="stuLevel" 
+               oninput="this.value = this.value.toUpperCase(); checkStep2();" 
+               placeholder="레벨 (예: 2A)" 
+               class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+        
+        <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+        
+        <input type="text" id="stuEnName" oninput="checkStep2()" placeholder="학생 영어 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+        
+        <input type="tel" 
+               id="parentPhone" 
+               oninput="formatPhone(this); checkStep2();" 
+               maxlength="13" 
+               placeholder="부모님 휴대폰" 
+               class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+    </div>
+
             <div id="existingReservationArea" class="hidden bg-blue-50 border border-blue-200 p-6 rounded-2xl mb-4">
                 <h4 class="font-black text-blue-900 mb-2">💡 이미 등록된 예약 정보가 있습니다.</h4>
                 <div id="existingDetails" class="text-sm text-slate-700 mb-4"></div>
@@ -419,49 +424,49 @@
 
         // --- 메인 예약 기능 로직 ---
 function checkStep2() {
-    // 입력값 그대로 가져오기 (공백만 제거)
-    selection.level = document.getElementById('stuLevel').value.trim();
-    selection.krName = document.getElementById('stuKrName').value.trim();
-    selection.parentPhone = document.getElementById('parentPhone').value.trim();
-    
-    // 휴대폰 번호 유효성 검사 (010-0000-0000 형식일 때만 다음 단계 오픈)
-    const isPhoneValid = /^010-\d{4}-\d{4}$/.test(selection.parentPhone);
+        selection.level = document.getElementById('stuLevel').value.trim();
+        selection.krName = document.getElementById('stuKrName').value.trim();
+        selection.enName = document.getElementById('stuEnName').value.trim(); // 영어 이름 데이터 수집
+        selection.parentPhone = document.getElementById('parentPhone').value.trim();
+        
+        const isPhoneValid = /^010-\d{4}-\d{4}$/.test(selection.parentPhone);
 
-    if(selection.level && selection.krName && isPhoneValid) {
-        // 마감 시한 체크 (마감되었으면 진행 불가)
-        if (!checkDeadlineStatus()) {
-            document.getElementById('step3Section').classList.add('step-inactive');
-            return;
-        }
-
-        db.ref('appointments').once('value', snap => {
-            const data = snap.val() || {};
-            existingKey = Object.keys(data).find(k => 
-                data[k].level === selection.level && 
-                data[k].krName === selection.krName && 
-                data[k].parentPhone === selection.parentPhone
-            );
-
-            if(existingKey) {
-                const app = data[existingKey];
-                const itemDetails = app.items.map(i => `${i.teacher} 선생님(${i.time})`).join(', ');
-                document.getElementById('existingReservationArea').classList.remove('hidden');
-                document.getElementById('existingDetails').innerHTML = `
-                    <div class="mb-1"><b>📅 예약 회차:</b> ${app.date}</div>
-                    <div><b>⏰ 예약 내역:</b> <span class="text-blue-700 font-bold">${itemDetails}</span></div>
-                `;
-            } else {
-                document.getElementById('existingReservationArea').classList.add('hidden');
+        // 검색 조건: 레벨, 한글 이름, 휴대폰 번호가 모두 입력되었을 때만 실행
+        if(selection.level && selection.krName && isPhoneValid) {
+            if (!checkDeadlineStatus()) {
+                document.getElementById('step3Section').classList.add('step-inactive');
+                return;
             }
-        });
 
-        document.getElementById('step3Section').classList.remove('step-inactive');
-        renderTeachers();
-    } else {
-        document.getElementById('step3Section').classList.add('step-inactive');
+            db.ref('appointments').once('value', snap => {
+                const data = snap.val() || {};
+                // 기존 예약 검색 시 영어 이름은 조건에서 제외됨
+                existingKey = Object.keys(data).find(k => 
+                    data[k].level === selection.level && 
+                    data[k].krName === selection.krName && 
+                    data[k].parentPhone === selection.parentPhone
+                );
+
+                if(existingKey) {
+                    const app = data[existingKey];
+                    const itemDetails = app.items.map(i => `${i.teacher} 선생님(${i.time})`).join(', ');
+                    document.getElementById('existingReservationArea').classList.remove('hidden');
+                    document.getElementById('existingDetails').innerHTML = `
+                        <div class="mb-1"><b>📅 예약 회차:</b> ${app.date}</div>
+                        <div><b>⏰ 예약 내역:</b> <span class="text-blue-700 font-bold">${itemDetails}</span></div>
+                    `;
+                } else {
+                    document.getElementById('existingReservationArea').classList.add('hidden');
+                }
+            });
+
+            document.getElementById('step3Section').classList.remove('step-inactive');
+            renderTeachers();
+        } else {
+            document.getElementById('step3Section').classList.add('step-inactive');
+        }
+        updateSummary();
     }
-    updateSummary();
-   }
 
      function prepareEdit() {
     // 마감 시한 체크 로직 추가
