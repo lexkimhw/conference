@@ -162,7 +162,7 @@
                     <div class="bg-white rounded-2xl border overflow-hidden">
                         <table class="w-full text-[11px]" id="adminTable">
                             <thead class="bg-slate-100 border-b">
-                                <tr><th class="p-3">회차</th><th class="p-3">레벨</th><th class="p-3">이름</th><th class="p-3">연락처</th><th class="p-3">선생님</th><th class="p-3">시간</th><th class="p-3">관리</th></tr>
+                                <tr><th class="p-3">회차</th><th class="p-3">레벨</th><th class="p-3">한글 이름</th><th class="p-3">영어 이름</th><th class="p-3">연락처</th><th class="p-3">선생님</th><th class="p-3">시간</th><th class="p-3">관리</th></tr>
                             </thead>
                             <tbody id="adminBody" class="divide-y text-center"></tbody>
                         </table>
@@ -404,23 +404,28 @@
             });
         }
 
-        function refreshAdminTable() {
-            const body = document.getElementById('adminBody');
-            body.innerHTML = '';
-            db.ref('appointments').once('value', snap => {
-                const data = snap.val() || {};
-                Object.keys(data).forEach(key => {
-                    const a = data[key];
-                    a.items.forEach(i => {
-                        body.innerHTML += `<tr>
-                            <td class="p-3">${a.date}</td><td class="p-3">${a.level}</td><td class="p-3 font-black">${a.krName}</td>
-                            <td class="p-3">${a.parentPhone}</td><td class="p-3 text-blue-600 font-bold">${i.teacher}</td><td class="p-3 font-bold">${i.time}</td>
-                            <td class="p-3"><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('appointments/${key}').remove()" class="text-red-500 font-bold">삭제</button></td>
-                        </tr>`;
-                    });
-                });
+       function refreshAdminTable() {
+    const body = document.getElementById('adminBody');
+    body.innerHTML = '';
+    db.ref('appointments').once('value', snap => {
+        const data = snap.val() || {};
+        Object.keys(data).forEach(key => {
+            const a = data[key];
+            a.items.forEach(i => {
+                body.innerHTML += `<tr>
+                    <td class="p-3">${a.date}</td>
+                    <td class="p-3">${a.level}</td>
+                    <td class="p-3 font-black">${a.krName}</td>
+                    <td class="p-3 text-slate-500">${a.enName || '-'}</td> <td class="p-3">${a.parentPhone}</td>
+                    <td class="p-3 text-blue-600 font-bold">${i.teacher}</td>
+                    <td class="p-3 font-bold">${i.time}</td>
+                    <td class="p-3"><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('appointments/${key}').remove()" class="text-red-500 font-bold">삭제</button></td>
+                </tr>`;
             });
-        }
+        });
+    });
+}
+
 
         // --- 메인 예약 기능 로직 ---
 function checkStep2() {
@@ -573,19 +578,24 @@ function checkStep2() {
             ref.set(selection).then(() => { alert("저장이 완료되었습니다."); location.reload(); });
         }
 
-        async function captureResult() {
-            const card = document.getElementById('captureCard');
-            document.getElementById('capDate').innerText = selection.date;
-            document.getElementById('capStudent').innerText = `${selection.krName} (${selection.level})`;
-            const tDiv = document.getElementById('capTeachers'); tDiv.innerHTML = '';
-            selection.items.forEach(i => tDiv.innerHTML += `<div class="bg-slate-50 p-3 rounded-xl flex justify-between font-bold"><span>${i.teacher}</span><span class="text-blue-600">${i.time}</span></div>`);
-            
-            card.classList.remove('hidden');
-            const canvas = await html2canvas(card, { scale: 2 });
-            const link = document.createElement('a'); link.download = `렉스김예약_${selection.krName}.png`;
-            link.href = canvas.toDataURL(); link.click();
-            card.classList.add('hidden');
-        }
+       async function captureResult() {
+    const card = document.getElementById('captureCard');
+    document.getElementById('capDate').innerText = selection.date;
+    // 한글 이름 옆에 영어 이름 병기
+    document.getElementById('capStudent').innerText = `${selection.krName} (${selection.enName || ''}) [${selection.level}]`;
+    
+    const tDiv = document.getElementById('capTeachers'); 
+    tDiv.innerHTML = '';
+    selection.items.forEach(i => tDiv.innerHTML += `<div class="bg-slate-50 p-3 rounded-xl flex justify-between font-bold"><span>${i.teacher}</span><span class="text-blue-600">${i.time}</span></div>`);
+    
+    card.classList.remove('hidden');
+    const canvas = await html2canvas(card, { scale: 2 });
+    const link = document.createElement('a'); 
+    link.download = `렉스김예약_${selection.krName}.png`;
+    link.href = canvas.toDataURL(); 
+    link.click();
+    card.classList.add('hidden');
+}
 
        function openAdmin() {
     const input = prompt("관리자 비밀번호를 입력하세요.");
