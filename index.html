@@ -31,6 +31,15 @@
 
         /* 마감 스타일 */
         .btn-disabled { opacity: 0.5; cursor: not-allowed !important; pointer-events: none !important; }
+       /* 아래로 가기 아이콘 애니메이션 */
+      @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+    40% {transform: translateY(-10px);}
+    60% {transform: translateY(-5px);}
+    }
+     .scroll-indicator {
+    animation: bounce 2s infinite;
+    }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-24">
@@ -71,6 +80,13 @@
                maxlength="13" 
                placeholder="부모님 휴대폰" 
                class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+    </div>
+
+        <div id="scrollGuide" class="hidden flex flex-col items-center gap-1 text-slate-400 mt-4">
+        <span class="text-[10px] font-bold">상담 시간 선택을 위해 아래로 이동</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 scroll-indicator" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="Ref: M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
     </div>
 
             <div id="existingReservationArea" class="hidden bg-blue-50 border border-blue-200 p-6 rounded-2xl mb-4">
@@ -456,11 +472,22 @@ function checkStep2() {
         const isPhoneValid = /^010-\d{4}-\d{4}$/.test(selection.parentPhone);
 
         // 검색 조건: 레벨, 한글 이름, 휴대폰 번호가 모두 입력되었을 때만 실행
-        if(selection.level && selection.krName && isPhoneValid) {
-            if (!checkDeadlineStatus()) {
-                document.getElementById('step3Section').classList.add('step-inactive');
-                return;
-            }
+       if(selection.level && selection.krName && isPhoneValid) {
+        // 기존 코드...
+        document.getElementById('step3Section').classList.remove('step-inactive');
+        
+        // 아이콘 표시 (모바일에서만 유용하므로 화면 너비 체크 가능)
+        if(window.innerWidth < 768) {
+            document.getElementById('scrollGuide').classList.remove('hidden');
+        }
+        
+        renderTeachers();
+    } else {
+        document.getElementById('step3Section').classList.add('step-inactive');
+        document.getElementById('scrollGuide').classList.add('hidden'); // 숨김
+    }
+    updateSummary();
+     }
 
             db.ref('appointments').once('value', snap => {
                 const data = snap.val() || {};
