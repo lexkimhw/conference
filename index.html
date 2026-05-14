@@ -472,22 +472,11 @@ function checkStep2() {
         const isPhoneValid = /^010-\d{4}-\d{4}$/.test(selection.parentPhone);
 
         // 검색 조건: 레벨, 한글 이름, 휴대폰 번호가 모두 입력되었을 때만 실행
-       if(selection.level && selection.krName && isPhoneValid) {
-        // 기존 코드...
-        document.getElementById('step3Section').classList.remove('step-inactive');
-        
-        // 아이콘 표시 (모바일에서만 유용하므로 화면 너비 체크 가능)
-        if(window.innerWidth < 768) {
-            document.getElementById('scrollGuide').classList.remove('hidden');
-        }
-        
-        renderTeachers();
-    } else {
-        document.getElementById('step3Section').classList.add('step-inactive');
-        document.getElementById('scrollGuide').classList.add('hidden'); // 숨김
-    }
-    updateSummary();
-     }
+        if(selection.level && selection.krName && isPhoneValid) {
+            if (!checkDeadlineStatus()) {
+                document.getElementById('step3Section').classList.add('step-inactive');
+                return;
+            }
 
             db.ref('appointments').once('value', snap => {
                 const data = snap.val() || {};
