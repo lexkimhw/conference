@@ -36,7 +36,7 @@
 <body class="bg-slate-50 min-h-screen pb-40">
 
     <header class="bg-blue-900 text-white p-5 shadow-xl flex justify-between items-center sticky top-0 z-50">
-        <h1 class="text-xl font-black tracking-tighter">렉스김어학원 학부모 간담회 예약</h1>
+        <h1 class="text-xl font-black tracking-tighter">렉스김어학원 간담회 예약</h1>
         <div class="flex gap-2">
             <button onclick="resetAll()" class="text-[10px] font-bold bg-red-500 px-3 py-1.5 rounded-full text-white">초기화</button>
             <button onclick="openAdmin()" class="text-[10px] font-bold bg-white/10 px-3 py-1.5 rounded-full text-white">Admin</button>
@@ -176,8 +176,8 @@
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div id="selectionSummary" class="text-blue-900 font-black text-lg italic underline">정보를 입력해 주세요.</div>
             <div class="flex gap-2">
-                <button id="captureBtn" onclick="captureResult()" class="hidden bg-amber-500 text-white px-6 py-4 rounded-2xl font-black">예약 확인증 받기</button>
-                <button id="confirmBtn" onclick="submitReservation()" class="bg-blue-900 text-white px-10 py-4 rounded-2xl font-black">현재 상태 저장 하고 나가기</button>
+                <button id="captureBtn" onclick="captureResult()" class="hidden bg-amber-500 text-white px-6 py-4 rounded-2xl font-black">확인증 받기</button>
+                <button id="confirmBtn" onclick="submitReservation()" class="bg-blue-900 text-white px-10 py-4 rounded-2xl font-black">저장 하기</button>
             </div>
         </div>
     </div>
@@ -302,7 +302,7 @@
                 if(editBtn) editBtn.classList.add('hidden');
                 return false;
             } else {
-                confirmBtn.innerText = "현재 상태 저장 하고 나가기";
+                confirmBtn.innerText = "저장 하기";
                 confirmBtn.classList.remove('btn-disabled', 'bg-slate-400');
                 confirmBtn.classList.add('bg-blue-900');
                 if(editBtn) editBtn.classList.remove('hidden');
