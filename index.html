@@ -63,7 +63,7 @@
         
         <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
         
-        <input type="text" id="stuEnName" oninput="checkStep2()" placeholder="학생 영어 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
+        <input type="text" id="stuEnName" oninput="formatEnglishName(this); checkStep2();" placeholder="학생 영어 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
         
         <input type="tel" 
                id="parentPhone" 
@@ -267,6 +267,16 @@
                 .replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, "$1-$2-$3").replace(/\-{1,2}$/g, "");
         }
 
+        // 영어 이름 첫 글자 대문자 변환 로직
+       function formatEnglishName(target) {
+        let val = target.value;
+        if (val.length > 0) {
+        // 첫 글자는 대문자로, 나머지는 소문자로 변환
+        target.value = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
+         }
+        }
+
+
         // --- 마감 시한 로직 ---
         function renderDeadline() {
             if (reservationDeadline) {
@@ -416,7 +426,8 @@
                     <td class="p-3">${a.date}</td>
                     <td class="p-3">${a.level}</td>
                     <td class="p-3 font-black">${a.krName}</td>
-                    <td class="p-3 text-slate-500">${a.enName || '-'}</td> <td class="p-3">${a.parentPhone}</td>
+                    <td class="p-3 text-slate-500">${a.enName || '-'}</td> 
+                    <td class="p-3">${a.parentPhone}</td>
                     <td class="p-3 text-blue-600 font-bold">${i.teacher}</td>
                     <td class="p-3 font-bold">${i.time}</td>
                     <td class="p-3"><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('appointments/${key}').remove()" class="text-red-500 font-bold">삭제</button></td>
