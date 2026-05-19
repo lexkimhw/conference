@@ -372,15 +372,42 @@
         }
 
         // [변경] 데이터 저장 후 자동으로 확인증 모달 팝업창을 보여주도록 개선
-        function submitReservation() { 
-            if(!checkDeadlineStatus()) return alert("죄송합니다. 예약 및 수정 가능 시간이 종료되었습니다."); 
-            if(selection.items.length === 0) return alert("상담 일정을 선택해 주세요."); 
-            const ref = existingKey ? db.ref(`appointments/${existingKey}`) : db.ref('appointments').push(); 
-            ref.set(selection).then(() => { 
-                alert("예약 저장이 완료되었습니다! 확인증을 확인하세요."); 
-                openReceiptModal(); // 확인증 자동 열기
-            }); 
-        }
+function submitReservation() { 
+    if(!checkDeadlineStatus()) return alert("죄송합니다. 예약 및 수정 가능 시간이 종료되었습니다."); 
+    if(selection.items.length === 0) return alert("상담 일정을 선택해 주세요."); 
+    
+    const ref = existingKey ? db.ref(`appointments/${existingKey}`) : db.ref('appointments').push(); 
+    ref.set(selection).then(() => { 
+        alert("예약 저장이 완료되었습니다! 확인증을 확인하세요."); 
+        
+        // 1. 확인증 팝업에 현재 예약 정보를 먼저 채워서 띄웁니다.
+        openReceiptModal(); 
+        
+        // 2. 파이어베이스 저장이 끝났으므로 다음 사람을 위해 입력 변수와 화면 UI를 초기화합니다.
+        // 변수 초기화
+        selection = { date: '', level: '', krName: '', enName: '', parentPhone: '', items: [] };
+        existingKey = null;
+        
+        // 입력창 비우기
+        document.getElementById('stuLevel').value = '';
+        document.getElementById('stuKrName').value = '';
+        document.getElementById('stuEnName').value = '';
+        document.getElementById('parentPhone').value = '';
+        
+        // 하단 요약 바 및 스텝 스타일 초기화
+        document.getElementById('selectionSummary').innerText = "정보를 입력해 주세요.";
+        document.getElementById('captureBtn').classList.add('hidden');
+        document.getElementById('step3Section').classList.add('step-inactive');
+        document.getElementById('step4Section').classList.add('hidden');
+        document.getElementById('scrollGuide').classList.add('hidden');
+        document.getElementById('existingReservationArea').classList.add('hidden');
+        
+        // 날짜 선택 및 선생님 선택 버튼 테두리 스타일 모두 리셋
+        document.querySelectorAll('#dateList button').forEach(b => b.classList.remove('border-blue-900', 'bg-blue-50'));
+        const list = document.getElementById('teacherList');
+        if(list) list.innerHTML = '';
+    }); 
+}
 
         // [신규 기능] 확인증 모달 레이어 열기 및 데이터 배치
         function openReceiptModal() {
@@ -400,11 +427,10 @@
             document.getElementById('receiptModal').classList.remove('hidden');
         }
 
-        // [신규 기능] 확인증 팝업 닫기 및 페이지 새로고침
-        function closeReceiptModal() {
-            document.getElementById('receiptModal').classList.add('hidden');
-           // location.reload(); // 저장 완료 후 깔끔한 다음 조회를 위해 새로고침
-        }
+      // [수정] 확인증 팝업만 깔끔하게 닫는 함수 (이미 앞 단계에서 초기화가 끝났으므로 새로고침 불필요)
+function closeReceiptModal() {
+    document.getElementById('receiptModal').classList.add('hidden');
+}
 
         // [변경] 이미지로 저장하기 기능 (html2canvas 활용하여 팝업창 내부 카드만 캡처)
         async function downloadReceiptImage() {
