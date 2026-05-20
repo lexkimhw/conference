@@ -282,7 +282,6 @@
                 let curr = new Date(); 
                 curr.setHours(10, 20, 0, 0); 
                 const endLimit = new Date();
-                // 원장님 시간 연장으로 인해 타임라인 전체 시간축 범위를 13:20까지 확장
                 endLimit.setHours(13, 20, 0, 0);
                 const times = []; 
                 while(curr <= endLimit) { 
@@ -298,33 +297,11 @@
                     const bar = document.createElement('div'); 
                     bar.className = "timeline-bar"; 
                     
-                    const isDirector = t.name.includes('원장님');
-
                     times.forEach(time => { 
-                        let isReserved = false;
-
-                        if (isDirector) {
-                            // 원장님 20분 타임 매칭 로직 (10분 단위 그리드 2칸 연속 매칭)
-                            isReserved = Object.values(appointments).some(app => 
-                                app.date === t.dateRef && app.items && app.items.some(i => {
-                                    if (i.teacher !== t.name) return false;
-                                    
-                                    const resTime = i.time; 
-                                    const [resH, resM] = resTime.split(':').map(Number);
-                                    const [currH, currM] = time.split(':').map(Number);
-                                    
-                                    const resMinutes = resH * 60 + resM;
-                                    const currMinutes = currH * 60 + currM;
-                                    
-                                    return currMinutes >= resMinutes && currMinutes < resMinutes + 20;
-                                })
-                            );
-                        } else {
-                            // 일반 선생님 10분 정시 매칭
-                            isReserved = Object.values(appointments).some(app => 
-                                app.date === t.dateRef && app.items && app.items.some(i => i.teacher === t.name && i.time === time)
-                            );
-                        }
+                        // 모든 선생님 동일하게 10분 정시 매칭으로 수정
+                        let isReserved = Object.values(appointments).some(app => 
+                            app.date === t.dateRef && app.items && app.items.some(i => i.teacher === t.name && i.time === time)
+                        );
 
                         bar.innerHTML += `<div class="timeline-cell ${isReserved ? 'cell-reserved' : 'cell-free'}"></div>`; 
                     }); 
@@ -424,15 +401,9 @@
             let c = new Date(); 
             c.setHours(10, 20, 0, 0);
             
-            const isDirector = teacher.name.includes('원장님');
+            // 모든 선생님 마감 기준 동일 처리 (12시 50분)
             const endLimit = new Date();
-            if (isDirector) {
-                // 원장님은 오후 1시 20분(13:20)까지 생성
-                endLimit.setHours(13, 21, 0, 0); 
-            } else {
-                // 일반 선생님은 기존 동일 (오후 12시 50분)
-                endLimit.setHours(12, 50, 0, 0);
-            }
+            endLimit.setHours(12, 50, 0, 0);
 
             while(c <= endLimit) {
                 const ts = c.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
@@ -447,11 +418,8 @@
                 };
                 grid.appendChild(slot);
                 
-                if (isDirector) {
-                    c.setMinutes(c.getMinutes() + 20);
-                } else {
-                    c.setMinutes(c.getMinutes() + 10);
-                }
+                // 모든 선생님 10분 단위로 세팅
+                c.setMinutes(c.getMinutes() + 10);
             }
 
             db.ref('appointments').once('value', snap => {
