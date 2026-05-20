@@ -273,7 +273,7 @@
         function editTeacher(key, dateRef, name, levels) { document.getElementById('editTeacherKey').value = key; document.getElementById('newTeacherDateRef').value = dateRef; document.getElementById('newTeacherName').value = name; document.getElementById('newTeacherLevels').value = levels; document.getElementById('teacherSubmitBtn').innerText = "수정하기"; }
         function renderAdminTeachers() { const list = document.getElementById('adminTeacherList'); list.innerHTML = ''; Object.keys(window.allTeachers).forEach(key => { const t = window.allTeachers[key]; list.innerHTML += `<div class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm"><div><div class="text-[10px] text-blue-600 font-bold">${t.dateRef}</div><div class="font-black text-slate-800">${t.name} 선생님</div><div class="text-[9px] text-slate-400">${t.levels.join(', ')}</div></div><div class="flex gap-2"><button onclick="editTeacher('${key}', '${t.dateRef}', '${t.name}', '${t.levels}')" class="text-[10px] font-bold text-blue-500">수정</button><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/teachers/${key}').remove()" class="text-[10px] font-bold text-red-500">삭제</button></div></div>`; }); }
 
-       function renderTimeline() { 
+      function renderTimeline() { 
             const labels = document.getElementById('timelineTimeLabels'); 
             const rows = document.getElementById('timelineRows'); 
             labels.innerHTML = ''; rows.innerHTML = ''; 
@@ -282,7 +282,8 @@
                 let curr = new Date(); 
                 curr.setHours(10, 20, 0, 0); 
                 const endLimit = new Date();
-                endLimit.setHours(12, 50, 0, 0);
+                // 원장님 시간 연장으로 인해 타임라인 전체 시간축 범위를 13:20까지 확장
+                endLimit.setHours(13, 20, 0, 0);
                 const times = []; 
                 while(curr <= endLimit) { 
                     const tStr = curr.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' }); 
@@ -300,30 +301,26 @@
                     const isDirector = t.name.includes('원장님');
 
                     times.forEach(time => { 
-                        // 예약 여부 확인 변수
                         let isReserved = false;
 
                         if (isDirector) {
-                            // 원장님은 20분 상담이므로, 예를 들어 10:20 예약이라면 10:20 칸과 10:30 칸 모두 빨간색으로 표시되어야 합니다.
+                            // 원장님 20분 타임 매칭 로직 (10분 단위 그리드 2칸 연속 매칭)
                             isReserved = Object.values(appointments).some(app => 
                                 app.date === t.dateRef && app.items && app.items.some(i => {
                                     if (i.teacher !== t.name) return false;
                                     
-                                    // 예약된 정시 시간(예: 10:20)
                                     const resTime = i.time; 
                                     const [resH, resM] = resTime.split(':').map(Number);
-                                    // 현재 타임라인의 시간(예: 10:30)
                                     const [currH, currM] = time.split(':').map(Number);
                                     
                                     const resMinutes = resH * 60 + resM;
                                     const currMinutes = currH * 60 + currM;
                                     
-                                    // 예약 시작 시간부터 20분 내에 포함되는 10분 단위 칸들은 전부 예약 처리
                                     return currMinutes >= resMinutes && currMinutes < resMinutes + 20;
                                 })
                             );
                         } else {
-                            // 일반 선생님은 기존처럼 10분 단위 정시 매칭
+                            // 일반 선생님 10분 정시 매칭
                             isReserved = Object.values(appointments).some(app => 
                                 app.date === t.dateRef && app.items && app.items.some(i => i.teacher === t.name && i.time === time)
                             );
@@ -406,10 +403,8 @@
                 return;
             }
 
-            // [변경 조건] 현재 담겨 있는 예약 아이템 중 일반 선생님(이름에 '원장님'이 포함되지 않은 분)들의 인원 수 계산
             const regularTeacherCount = selection.items.filter(i => !i.teacher.includes('원장님')).length;
             
-            // 새로 선택하려는 분이 일반 선생님이면서, 이미 일반 선생님이 2명 차있을 때만 블로킹 (원장님 선택 시에는 2명 제한 패스)
             if (!teacher.name.includes('원장님') && regularTeacherCount >= 2) { 
                 alert("일반 선생님은 최대 2명까지만 예약 가능합니다. (원장님 상담은 제한 인원에 포함되지 않습니다.)"); 
                 return; 
@@ -432,8 +427,10 @@
             const isDirector = teacher.name.includes('원장님');
             const endLimit = new Date();
             if (isDirector) {
-                endLimit.setHours(13, 0, 0, 0);
+                // 원장님은 오후 1시 20분(13:20)까지 생성
+                endLimit.setHours(13, 21, 0, 0); 
             } else {
+                // 일반 선생님은 기존 동일 (오후 12시 50분)
                 endLimit.setHours(12, 50, 0, 0);
             }
 
