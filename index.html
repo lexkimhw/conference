@@ -228,16 +228,42 @@
                 const adminList = document.getElementById('adminDateList');
                 const selectBox = document.getElementById('newTeacherDateRef');
                 mainList.innerHTML = ''; adminList.innerHTML = ''; selectBox.innerHTML = '<option value="">회차 선택</option>';
-                Object.keys(dates).forEach(key => {
+                
+                const dateKeys = Object.keys(dates);
+
+                dateKeys.forEach(key => {
                     const d = dates[key];
                     const btn = document.createElement('button');
                     btn.className = "p-6 border-2 border-white rounded-3xl text-left bg-white shadow-sm transition-all";
                     btn.innerHTML = `<div class="font-black text-slate-800 text-xl">${d.name}</div><div class="text-xs text-slate-500 font-bold">${d.desc}</div>`;
-                    btn.onclick = () => { selection.date = d.name; document.querySelectorAll('#dateList button').forEach(b => b.classList.remove('border-blue-900', 'bg-blue-50')); btn.classList.add('border-blue-900', 'bg-blue-50'); document.getElementById('step2Section').classList.remove('step-inactive'); checkStep2(); };
+                    
+                    // 여러 개일 때는 클릭을 통해 동작
+                    btn.onclick = () => { 
+                        selection.date = d.name; 
+                        document.querySelectorAll('#dateList button').forEach(b => b.classList.remove('border-blue-900', 'bg-blue-50')); 
+                        btn.classList.add('border-blue-900', 'bg-blue-50'); 
+                        document.getElementById('step2Section').classList.remove('step-inactive'); 
+                        checkStep2(); 
+                    };
                     mainList.appendChild(btn);
                     adminList.innerHTML += `<div class="flex justify-between items-center bg-white p-3 border rounded-2xl"><div><b class="text-blue-900">${d.name}</b> <span class="text-xs text-slate-400">(${d.desc})</span></div><div class="flex gap-2"><button onclick="editDate('${key}', '${d.name}', '${d.desc}')" class="text-xs font-bold text-blue-500">수정</button><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/dates/${key}').remove()" class="text-xs font-bold text-red-500">삭제</button></div></div>`;
                     selectBox.innerHTML += `<option value="${d.name}">${d.name}</option>`;
                 });
+
+                // [변경 조건] 등록된 회차가 단 1개일 때 로직 처리
+                if (dateKeys.length === 1) {
+                    const singleKey = dateKeys[0];
+                    const singleDate = dates[singleKey];
+                    
+                    // 내부 선택 변수에 자동 할당 및 첫 번째 버튼 활성화 스타일 처리
+                    selection.date = singleDate.name;
+                    const firstBtn = mainList.querySelector('button');
+                    if (firstBtn) firstBtn.classList.add('border-blue-900', 'bg-blue-50');
+                    
+                    // 회차 선택 단계를 거치지 않고 Step 2 입력란 바로 비활성화 해제(즉시 입력 가능)
+                    document.getElementById('step2Section').classList.remove('step-inactive');
+                    checkStep2();
+                }
             });
             db.ref('settings/teachers').on('value', snap => { window.allTeachers = snap.val() || {}; renderTeachers(); renderAdminTeachers(); renderTimeline(); });
             db.ref('appointments').on('value', () => { refreshAdminTable(); renderTimeline(); });
@@ -414,23 +440,41 @@
                 
                 openReceiptModal(); 
                 
-                selection = { date: '', level: '', krName: '', enName: '', parentPhone: '', items: [] };
-                existingKey = null;
-                
-                document.getElementById('stuLevel').value = '';
-                document.getElementById('stuKrName').value = '';
-                document.getElementById('stuEnName').value = '';
-                document.getElementById('parentPhone').value = '';
-                
-                document.getElementById('selectionSummary').innerText = "정보를 입력해 주세요.";
-                document.getElementById('step3Section').classList.add('step-inactive');
-                document.getElementById('step4Section').classList.add('hidden');
-                document.getElementById('scrollGuide').classList.add('hidden');
-                document.getElementById('existingReservationArea').classList.add('hidden');
-                
-                document.querySelectorAll('#dateList button').forEach(b => b.classList.remove('border-blue-900', 'bg-blue-50'));
-                const list = document.getElementById('teacherList');
-                if(list) list.innerHTML = '';
+                // 저장 후 다음 사람 입력을 위해 변수 초기화할 때, 회차가 1개인지 체크
+                db.ref('settings/dates').once('value', dSnap => {
+                    const currentDates = dSnap.val() || {};
+                    const currentKeys = Object.keys(currentDates);
+                    
+                    selection = { date: '', level: '', krName: '', enName: '', parentPhone: '', items: [] };
+                    existingKey = null;
+                    
+                    document.getElementById('stuLevel').value = '';
+                    document.getElementById('stuKrName').value = '';
+                    document.getElementById('stuEnName').value = '';
+                    document.getElementById('parentPhone').value = '';
+                    
+                    document.getElementById('selectionSummary').innerText = "정보를 입력해 주세요.";
+                    document.getElementById('step3Section').classList.add('step-inactive');
+                    document.getElementById('step4Section').classList.add('hidden');
+                    document.getElementById('scrollGuide').classList.add('hidden');
+                    document.getElementById('existingReservationArea').classList.add('hidden');
+                    
+                    document.querySelectorAll('#dateList button').forEach(b => b.classList.remove('border-blue-900', 'bg-blue-50'));
+                    
+                    // 회차가 1개이면 초기화 후에도 자동으로 다시 선택 및 잠금 해제 유지
+                    if(currentKeys.length === 1) {
+                        selection.date = currentDates[currentKeys[0]].name;
+                        const firstBtn = document.getElementById('dateList').querySelector('button');
+                        if (firstBtn) firstBtn.classList.add('border-blue-900', 'bg-blue-50');
+                        document.getElementById('step2Section').classList.remove('step-inactive');
+                        checkStep2();
+                    } else {
+                        document.getElementById('step2Section').classList.add('step-inactive');
+                    }
+                    
+                    const list = document.getElementById('teacherList');
+                    if(list) list.innerHTML = '';
+                });
             }); 
         }
 
