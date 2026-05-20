@@ -72,16 +72,20 @@
 
     <main class="max-w-4xl mx-auto p-6">
         <section class="bg-white p-6 rounded-3xl shadow-sm mb-8 border border-slate-200">
-            <div id="displayNotice" class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap font-medium font-bold italic mb-3">공지사항을 불러오고 있습니다...</div>
+            <div id="displayNotice" class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap font-medium font-bold italic mb-3">공지사항 등록 대기 중...</div>
             <div id="deadlineDisplay" class="flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 p-2.5 rounded-xl border border-red-100 hidden">
                 <span class="flex items-center gap-1">⏰ 예약 및 수정 가능 시간: </span>
                 <span id="deadlineText">설정되지 않음</span>
             </div>
         </section>
 
-        <div id="dateList" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10"></div>
+        <h3 class="text-sm font-bold text-slate-500 mb-3 px-1">📅 간담회 회차 선택</h3>
+        <div id="dateList" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+            <p class="text-slate-400 text-sm col-span-2 italic">등록된 회차가 없거나 데이터를 불러오는 중입니다. 관리자 메뉴에서 회차를 등록해 주세요.</p>
+        </div>
         
         <div id="step2Section" class="step-inactive mb-10">
+            <h3 class="text-sm font-bold text-slate-500 mb-3 px-1">✍️ 학생 정보 입력</h3>
             <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
                 <input type="text" id="stuLevel" oninput="this.value = this.value.toUpperCase(); checkStep2();" placeholder="레벨 (예: 2A)" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
                 <input type="text" id="stuKrName" oninput="checkStep2()" placeholder="학생 한글 이름" class="border-b-2 border-slate-100 p-2 outline-none focus:border-blue-900 font-bold text-lg text-center">
@@ -236,17 +240,39 @@
         }
 
         function initApp() {
+            // 1. 공지사항 로드 및 안전 장치 (에러 처리 추가)
+            db.ref('settings/notice').on('value', snap => { 
+                const notice = snap.val() || "렉스김어학원 간담회 예약 페이지입니다. 오른쪽 상단 '관리자' 메뉴에서 안내 공지 및 회차 설정을 진행하실 수 있습니다."; 
+                document.getElementById('displayNotice').innerText = notice; 
+                document.getElementById('adminNoticeInput').value = notice; 
+            }, err => {
+                console.error("공지 로드 에러:", err);
+                document.getElementById('displayNotice').innerText = "렉스김어학원 간담회 예약 페이지입니다. (오른쪽 상단 '관리자' 메뉴 버튼을 눌러 초기 설정을 진행하세요)";
+            });
+
+            // 2. 마감일 설정 로드
             db.ref('settings/deadline').on('value', snap => { reservationDeadline = snap.val(); renderDeadline(); checkDeadlineStatus(); });
-            db.ref('settings/notice').on('value', snap => { const notice = snap.val() || "등록된 공지가 없습니다."; document.getElementById('displayNotice').innerText = notice; document.getElementById('adminNoticeInput').value = notice; });
+            
+            // 3. 회차 리스트 로드 및 안전 장치
             db.ref('settings/dates').on('value', snap => {
                 const dates = snap.val() || {};
                 const mainList = document.getElementById('dateList');
                 const adminList = document.getElementById('adminDateList');
                 const selectBox = document.getElementById('newTeacherDateRef');
-                mainList.innerHTML = ''; adminList.innerHTML = ''; selectBox.innerHTML = '<option value="">회차 선택</option>';
+                
+                mainList.innerHTML = ''; 
+                adminList.innerHTML = ''; 
+                selectBox.innerHTML = '<option value="">회차 선택</option>';
                 
                 const dateKeys = Object.keys(dates);
                 
+                if (dateKeys.length === 0) {
+                    mainList.innerHTML = '<p class="text-slate-400 text-sm col-span-2 italic">등록된 간담회 회차가 없습니다. 우측 상단 [관리자] 메뉴에서 회차와 선생님을 추가해 주세요.</p>';
+                    hasSingleDate = false;
+                    singleDateName = "";
+                    return;
+                }
+
                 if (dateKeys.length === 1) {
                     hasSingleDate = true;
                     singleDateName = dates[dateKeys[0]].name;
@@ -259,7 +285,7 @@
                 dateKeys.forEach(key => {
                     const d = dates[key];
                     const btn = document.createElement('button');
-                    btn.className = "p-6 border-2 border-white rounded-3xl text-left bg-white shadow-sm transition-all";
+                    btn.className = "p-6 border-2 border-white rounded-3xl text-left bg-white shadow-sm transition-all w-full";
                     btn.innerHTML = `<div class="font-black text-slate-800 text-xl">${d.name}</div><div class="text-xs text-slate-500 font-bold">${d.desc}</div>`;
                     
                     if(hasSingleDate) {
@@ -283,6 +309,7 @@
                     checkStep2();
                 }
             });
+
             db.ref('settings/teachers').on('value', snap => { window.allTeachers = snap.val() || {}; renderTeachers(); renderAdminTeachers(); renderTimeline(); });
             db.ref('appointments').on('value', () => { refreshAdminTable(); renderTimeline(); });
             setInterval(checkDeadlineStatus, 60000);
@@ -584,7 +611,21 @@
             window.print();
         }
         
-        function openAdmin() { const input = prompt("관리자 비밀번호를 입력하세요."); if (!input) return; db.ref('settings/adminPw').once('value', snap => { const savedPw = snap.val(); if (savedPw && input === savedPw.toString()) { document.getElementById('adminModal').classList.remove('hidden'); } else { alert("비밀번호가 일치하지 않습니다."); } }).catch(err => { console.error("암호 불러오기 실패:", err); alert("관리자 인증 중 오류가 발생했습니다."); }); }
+        function openAdmin() { 
+            const input = prompt("관리자 비밀번호를 입력하세요."); 
+            if (!input) return; 
+            db.ref('settings/adminPw').once('value', snap => { 
+                const savedPw = snap.val() || "1234"; // 비밀번호가 비어있을 시 기본값 1234 작동 하도록 추가
+                if (savedPw && input === savedPw.toString()) { 
+                    document.getElementById('adminModal').classList.remove('hidden'); 
+                } else { 
+                    alert("비밀번호가 일치하지 않습니다."); 
+                } 
+            }).catch(err => { 
+                console.error("암호 불러오기 실패:", err); 
+                alert("관리자 인증 중 오류가 발생했습니다. 규칙이나 콘솔창을 확인하세요."); 
+            }); 
+        }
         function closeAdmin() { document.getElementById('adminModal').classList.add('hidden'); }
         function resetAll() { if(confirm("초기화하시겠습니까?")) location.reload(); }
         function exportToExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('adminTable')), "LEXKIM_RESERVATION.xlsx"); }
