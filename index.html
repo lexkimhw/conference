@@ -280,11 +280,10 @@
             db.ref('appointments').once('value', snap => { 
                 const appointments = snap.val() || {}; 
                 let curr = new Date(); 
-                // 시작 시간을 10:10분으로 변경
                 curr.setHours(10, 10, 0, 0); 
                 const endLimit = new Date();
-                // 종료 시간을 13:00(오후 1시)으로 변경
-                endLimit.setHours(13, 0, 0, 0);
+                // 타임라인 마지막 헤더 라벨 표시도 마지막 상담 시작 시각인 12:50에 맞춤
+                endLimit.setHours(12, 50, 0, 0);
                 const times = []; 
                 while(curr <= endLimit) { 
                     const tStr = curr.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' }); 
@@ -300,7 +299,6 @@
                     bar.className = "timeline-bar"; 
                     
                     times.forEach(time => { 
-                        // 모든 선생님 구분 없이 정시 10분 매칭으로 통일
                         let isReserved = Object.values(appointments).some(app => 
                             app.date === t.dateRef && app.items && app.items.some(i => i.teacher === t.name && i.time === time)
                         );
@@ -401,11 +399,10 @@
             step4.scrollIntoView({ behavior: 'smooth' });
 
             let c = new Date(); 
-            // 시작 시간을 10:10분으로 세팅
             c.setHours(10, 10, 0, 0);
             
             const endLimit = new Date();
-            // 13:00에 끝내기 위해 마지막 예약 가능 슬롯 타임을 12:50으로 한정 (10분 간격)
+            // 마지막 상담 시작 시간을 12:50분으로 정확히 제한
             endLimit.setHours(12, 50, 0, 0);
 
             while(c <= endLimit) {
@@ -421,7 +418,6 @@
                 };
                 grid.appendChild(slot);
                 
-                // 원장님, 선생님 모두 일괄적으로 10분 단위로 세팅
                 c.setMinutes(c.getMinutes() + 10);
             }
 
