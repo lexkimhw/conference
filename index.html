@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght=300;400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; word-break: keep-all; }
         .step-inactive { opacity: 0.2; pointer-events: none; filter: grayscale(1); transition: all 0.4s; }
         .time-slot { transition: all 0.2s; border: 1px solid #e2e8f0; }
@@ -37,10 +37,20 @@
 
         .btn-disabled { opacity: 0.5; cursor: not-allowed !important; pointer-events: none !important; }
 
-        /* EH.jpg 양식 완벽 연동형 인쇄 레이아웃 */
+        /* EH.pdf 양식 완벽 연동형 인쇄 레이아웃 */
         #teacherPrintArea { display: none; }
 
         @media print {
+            /* 2번째 장 빈 종이 출력 방지를 위한 브라우저 마진 최소화 및 높이 제어 */
+            @page {
+                size: A4;
+                margin: 10mm 15mm 10mm 15mm;
+            }
+            html, body {
+                height: 100%;
+                overflow: hidden;
+                background: #fff;
+            }
             body * { visibility: hidden; }
             .no-print { display: none !important; }
             
@@ -48,7 +58,7 @@
             body.print-receipt #receiptModal, body.print-receipt #receiptModal * { visibility: visible; }
             body.print-receipt #receiptModal { position: absolute; left: 0; top: 0; width: 100%; background: white; display: flex !important; }
             
-            /* 선생님 시간표 인쇄 스타일 (한글 이름 제외 버전) */
+            /* 선생님 시간표 인쇄 스타일 (빈 종이 출력 방지 패딩 조정 및 강제 1페이지 제한) */
             body.print-teacher #teacherPrintArea, body.print-teacher #teacherPrintArea * { visibility: visible; }
             body.print-teacher #teacherPrintArea { 
                 display: block !important; 
@@ -57,22 +67,24 @@
                 top: 0; 
                 width: 100%; 
                 background: white; 
-                padding: 40px !important;
+                padding: 10px 0 0 0 !important; /* 상단 여백 최소화 */
                 box-sizing: border-box;
+                page-break-after: avoid;
+                page-break-inside: avoid;
             }
             
             .print-table { 
                 width: 100% !important; 
                 border-collapse: collapse !important; 
-                margin-top: 20px !important; 
+                margin-top: 15px !important; 
             }
             .print-table th, .print-table td { 
                 border: 1px solid #000000 !important; 
-                padding: 12px 8px !important; 
-                font-size: 16px !important; 
+                padding: 10px 8px !important; /* 빈 종이 방지를 위해 셀 높이 소폭 최적화 */
+                font-size: 15px !important; 
                 text-align: center !important;
                 color: #000000 !important;
-                height: 45px !important;
+                height: 40px !important;
                 font-family: Arial, sans-serif !important;
             }
             .print-table th { font-weight: bold !important; background: transparent !important; }
@@ -160,7 +172,7 @@
     </div>
 
     <div id="teacherPrintArea">
-        <div id="printTeacherName" style="font-size: 28px; font-weight: bold; text-align: left; font-family: sans-serif; margin-bottom: 25px;"></div>
+        <div id="printTeacherName" style="font-size: 26px; font-weight: bold; text-align: left; font-family: sans-serif; margin-bottom: 15px; color: #000;"></div>
         <table class="print-table">
             <thead>
                 <tr>
@@ -384,7 +396,6 @@
             }); 
         }
 
-        // EH.pdf 양식 전용 인쇄 함수 (한글 이름 전면 제외 로직 반영)
         function printTeacherSchedule(dateRef, teacherName) {
             db.ref('appointments').once('value', snap => {
                 const appointments = snap.val() || {};
@@ -415,12 +426,11 @@
                     let level = matchedApp ? matchedApp.level : '';
                     let studentDisplay = '';
                     
-                    // EH.pdf 요청 사항 반영: 인쇄물에는 "영어 이름"만 출력 (한글명 강제 누락)
                     if (matchedApp) {
                         if (matchedApp.enName && matchedApp.enName.trim() !== '') {
                             studentDisplay = matchedApp.enName;
                         } else {
-                            studentDisplay = matchedApp.krName; // 영어 이름이 공란인 경우 시스템 예외 보정용
+                            studentDisplay = matchedApp.krName;
                         }
                     }
                     
@@ -435,11 +445,9 @@
                     curr.setMinutes(curr.getMinutes() + 10);
                 }
 
-                // 인쇄 모드 클래스 설정 전환
                 document.body.classList.remove('print-receipt');
                 document.body.classList.add('print-teacher');
                 
-                // 데이터 바인딩 브라우저 동기화 완성 대기 후 인쇄 팝업 트리거
                 setTimeout(() => {
                     window.print();
                 }, 400);
