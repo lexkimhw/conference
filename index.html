@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght=300;400;500;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; word-break: keep-all; }
         .step-inactive { opacity: 0.2; pointer-events: none; filter: grayscale(1); transition: all 0.4s; }
         .time-slot { transition: all 0.2s; border: 1px solid #e2e8f0; }
@@ -37,13 +37,24 @@
 
         .btn-disabled { opacity: 0.5; cursor: not-allowed !important; pointer-events: none !important; }
 
-        /* 인쇄 시 모달 창과 확인증 영역만 깔끔하게 출력되도록 설정 */
+        /* 인쇄 스타일 정의 */
         @media print {
             body * { visibility: hidden; }
-            #receiptModal, #receiptModal * { visibility: visible; }
-            #receiptModal { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            /* 영수증 모달 출력 상태일 때 */
+            body.print-receipt #receiptModal, body.print-receipt #receiptModal * { visibility: visible; }
+            body.print-receipt #receiptModal { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            
+            /* 선생님 시간표 출력 상태일 때 */
+            body.print-teacher #teacherPrintArea, body.print-teacher #teacherPrintArea * { visibility: visible; }
+            body.print-teacher #teacherPrintArea { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            
             .no-print { display: none !important; }
         }
+
+        /* 선생님 개별 시간표 스타일 (EH.pdf 양식 재현) */
+        .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: center; }
+        .print-table th, .print-table td { border: 1px solid #000; padding: 8px; font-size: 14px; height: 25px; }
+        .print-table th { background-color: #f2f2f2; font-weight: bold; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-24">
@@ -124,6 +135,22 @@
             <button onclick="printReceipt()" class="flex-1 bg-green-600 text-white py-3 rounded-2xl text-xs font-black shadow-lg hover:bg-green-700 transition-all">🖨️ 인쇄 / PDF</button>
             <button onclick="closeReceiptModal()" class="bg-slate-700 text-white px-5 py-3 rounded-2xl text-xs font-black shadow-lg hover:bg-slate-800 transition-all">닫기</button>
         </div>
+    </div>
+
+    <div id="teacherPrintArea" class="hidden p-6 bg-white text-black">
+        <h2 id="printTeacherName" class="text-2xl font-bold mb-4"></h2>
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width: 20%">Time</th>
+                    <th style="width: 20%">Level</th>
+                    <th style="width: 40%">Name</th>
+                    <th style="width: 20%">Check</th>
+                </tr>
+            </thead>
+            <tbody id="printTeacherTableBody">
+                </tbody>
+        </table>
     </div>
 
     <div id="adminModal" class="fixed inset-0 bg-slate-900/90 hidden z-[100] flex items-center justify-center p-4">
@@ -262,6 +289,7 @@
         function formatPhone(target) { target.value = target.value.replace(/[^0-9]/g, '').replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, "$1-$2-$3").replace(/\-{1,2}$/g, ""); }
         function formatEnglishName(target) { let val = target.value; if (val.length > 0) { target.value = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase(); } }
 
+        document.title = "렉스김어학원 간담회 예약";
         function renderDeadline() { if (reservationDeadline) { const d = new Date(reservationDeadline); const dStr = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')} ${d.getHours() >= 12 ? '오후' : '오전'} ${(d.getHours() % 12 || 12).toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; document.getElementById('deadlineText').innerText = dStr + " 까지"; document.getElementById('deadlineDisplay').classList.remove('hidden'); document.getElementById('adminDeadlineInput').value = reservationDeadline; } }
         function checkDeadlineStatus() { if (!reservationDeadline) return true; const now = new Date(); const deadline = new Date(reservationDeadline); const confirmBtn = document.getElementById('confirmBtn'); const editBtn = document.getElementById('editBtn'); if (now > deadline) { confirmBtn.innerText = "예약이 마감되었습니다"; confirmBtn.classList.add('btn-disabled', 'bg-slate-400'); confirmBtn.classList.remove('bg-blue-900'); if(editBtn) editBtn.classList.add('hidden'); return false; } else { confirmBtn.innerText = "저장 하기"; confirmBtn.classList.remove('btn-disabled', 'bg-slate-400'); confirmBtn.classList.add('bg-blue-900'); if(editBtn) editBtn.classList.remove('hidden'); return true; } }
         function updateDeadline() { const val = document.getElementById('adminDeadlineInput').value; if(!val) return alert("마감 시간을 선택해주세요."); db.ref('settings/deadline').set(val).then(() => alert("마감 시한이 업데이트되었습니다.")); }
@@ -271,8 +299,30 @@
         function editDate(key, name, desc) { document.getElementById('editDateKey').value = key; document.getElementById('newDateName').value = name; document.getElementById('newDateDesc').value = desc; document.getElementById('dateSubmitBtn').innerText = "수정하기"; }
         function saveTeacher() { const key = document.getElementById('editTeacherKey').value; const dateRef = document.getElementById('newTeacherDateRef').value; const name = document.getElementById('newTeacherName').value; const levels = document.getElementById('newTeacherLevels').value.split(',').map(s => s.trim()); if(!dateRef || !name) return alert("필수 정보를 입력하세요."); const ref = key ? db.ref(`settings/teachers/${key}`) : db.ref('settings/teachers').push(); ref.set({ dateRef, name, levels }).then(() => { document.getElementById('editTeacherKey').value = ''; document.getElementById('newTeacherName').value = ''; document.getElementById('newTeacherLevels').value = ''; document.getElementById('teacherSubmitBtn').innerText = "저장"; }); }
         function editTeacher(key, dateRef, name, levels) { document.getElementById('editTeacherKey').value = key; document.getElementById('newTeacherDateRef').value = dateRef; document.getElementById('newTeacherName').value = name; document.getElementById('newTeacherLevels').value = levels; document.getElementById('teacherSubmitBtn').innerText = "수정하기"; }
-        function renderAdminTeachers() { const list = document.getElementById('adminTeacherList'); list.innerHTML = ''; Object.keys(window.allTeachers).forEach(key => { const t = window.allTeachers[key]; list.innerHTML += `<div class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm"><div><div class="text-[10px] text-blue-600 font-bold">${t.dateRef}</div><div class="font-black text-slate-800">${t.name} 선생님</div><div class="text-[9px] text-slate-400">${t.levels.join(', ')}</div></div><div class="flex gap-2"><button onclick="editTeacher('${key}', '${t.dateRef}', '${t.name}', '${t.levels}')" class="text-[10px] font-bold text-blue-500">수정</button><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/teachers/${key}').remove()" class="text-[10px] font-bold text-red-500">삭제</button></div></div>`; }); }
+        
+        // 상담 선생님 설정 영역에 프린터 아이콘 추가
+        function renderAdminTeachers() { 
+            const list = document.getElementById('adminTeacherList'); 
+            list.innerHTML = ''; 
+            Object.keys(window.allTeachers).forEach(key => { 
+                const t = window.allTeachers[key]; 
+                list.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm">
+                        <div>
+                            <div class="text-[10px] text-blue-600 font-bold">${t.dateRef}</div>
+                            <div class="font-black text-slate-800">${t.name} 선생님</div>
+                            <div class="text-[9px] text-slate-400">${t.levels.join(', ')}</div>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="printTeacherSchedule('${t.dateRef}', '${t.name}')" class="text-xs bg-slate-100 hover:bg-slate-200 p-1.5 rounded-lg font-bold text-slate-700" title="시간표 인쇄">🖨️</button>
+                            <button onclick="editTeacher('${key}', '${t.dateRef}', '${t.name}', '${t.levels}')" class="text-[10px] font-bold text-blue-500">수정</button>
+                            <button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/teachers/${key}').remove()" class="text-[10px] font-bold text-red-500">삭제</button>
+                        </div>
+                    </div>`; 
+            }); 
+        }
 
+        // 실시간 예약 현황 타임라인 영역의 선생님 이름 옆에 프린터 아이콘 추가
         function renderTimeline() { 
             const labels = document.getElementById('timelineTimeLabels'); 
             const rows = document.getElementById('timelineRows'); 
@@ -282,7 +332,6 @@
                 let curr = new Date(); 
                 curr.setHours(10, 10, 0, 0); 
                 const endLimit = new Date();
-                // 타임라인 마지막 헤더 라벨 표시도 마지막 상담 시작 시각인 12:50에 맞춤
                 endLimit.setHours(12, 50, 0, 0);
                 const times = []; 
                 while(curr <= endLimit) { 
@@ -294,7 +343,11 @@
                 Object.values(window.allTeachers).forEach(t => { 
                     const row = document.createElement('div'); 
                     row.className = "timeline-row"; 
-                    row.innerHTML = `<div class="timeline-teacher-name">[${t.dateRef}] ${t.name}</div>`; 
+                    row.innerHTML = `
+                        <div class="timeline-teacher-name flex items-center justify-between">
+                            <span>[${t.dateRef}] ${t.name}</span>
+                            <button onclick="printTeacherSchedule('${t.dateRef}', '${t.name}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-1 rounded border shadow-sm ml-1" title="시간표 인쇄">🖨️</button>
+                        </div>`; 
                     const bar = document.createElement('div'); 
                     bar.className = "timeline-bar"; 
                     
@@ -309,6 +362,59 @@
                     rows.appendChild(row); 
                 }); 
             }); 
+        }
+
+        // EH.pdf 형태로 선생님 개별 시간표를 인쇄하는 핵심 함수
+        function printTeacherSchedule(dateRef, teacherName) {
+            db.ref('appointments').once('value', snap => {
+                const appointments = snap.val() || {};
+                
+                document.getElementById('printTeacherName').innerText = `${teacherName} 선생님 (${dateRef})`;
+                const tbody = document.getElementById('printTeacherTableBody');
+                tbody.innerHTML = '';
+
+                // 10:10 ~ 12:50 까지 10분 단위 타임슬롯 생성
+                let curr = new Date();
+                curr.setHours(10, 10, 0, 0);
+                const endLimit = new Date();
+                endLimit.setHours(12, 50, 0, 0);
+
+                while(curr <= endLimit) {
+                    const timeStr = curr.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                    
+                    // 해당 시간에 예약한 학생 정보 조회
+                    let matchedApp = null;
+                    Object.values(appointments).forEach(app => {
+                        if(app.date === dateRef && app.items) {
+                            app.items.forEach(i => {
+                                if(i.teacher === teacherName && i.time === timeStr) {
+                                    matchedApp = app;
+                                }
+                            });
+                        }
+                    });
+
+                    // EH.pdf 구조 매핑: 예약 데이터 유무에 따른 분기 처리
+                    let level = matchedApp ? matchedApp.level : '';
+                    let studentName = matchedApp ? `${matchedApp.krName}` + (matchedApp.enName ? ` (${matchedApp.enName})` : '') : '';
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${timeStr}</td>
+                            <td>${level}</td>
+                            <td>${studentName}</td>
+                            <td></td>
+                        </tr>
+                    `;
+
+                    curr.setMinutes(curr.getMinutes() + 10);
+                }
+
+                // 프린트 전용 클래스 토글 후 브라우저 인쇄창 호출
+                document.body.classList.remove('print-receipt');
+                document.body.classList.add('print-teacher');
+                window.print();
+            });
         }
 
         function refreshAdminTable() { const body = document.getElementById('adminBody'); body.innerHTML = ''; db.ref('appointments').once('value', snap => { const data = snap.val() || {}; Object.keys(data).forEach(key => { const a = data[key]; a.items.forEach(i => { body.innerHTML += `<tr><td class="p-3">${a.date}</td><td class="p-3">${a.level}</td><td class="p-3 font-black">${a.krName}</td><td class="p-3 text-slate-500">${a.enName || '-'}</td><td class="p-3">${a.parentPhone}</td><td class="p-3 text-blue-600 font-bold">${i.teacher}</td><td class="p-3 font-bold">${i.time}</td><td class="p-3"><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('appointments/${key}').remove()" class="text-red-500 font-bold">삭제</button></td></tr>`; }); }); }); }
@@ -402,7 +508,6 @@
             c.setHours(10, 10, 0, 0);
             
             const endLimit = new Date();
-            // 마지막 상담 시작 시간을 12:50분으로 정확히 제한
             endLimit.setHours(12, 50, 0, 0);
 
             while(c <= endLimit) {
@@ -513,6 +618,8 @@
         }
 
         function printReceipt() {
+            document.body.classList.remove('print-teacher');
+            document.body.classList.add('print-receipt');
             window.print();
         }
         
