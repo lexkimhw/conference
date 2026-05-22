@@ -10,7 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght=300;400;500;700;900&display=swap');
         body { font-family: 'Noto Sans KR', sans-serif; word-break: keep-all; }
         .step-inactive { opacity: 0.2; pointer-events: none; filter: grayscale(1); transition: all 0.4s; }
         .time-slot { transition: all 0.2s; border: 1px solid #e2e8f0; }
@@ -37,18 +37,18 @@
 
         .btn-disabled { opacity: 0.5; cursor: not-allowed !important; pointer-events: none !important; }
 
-        /* EH.jpg 완벽 연동형 인쇄 전용 스타일 레이아웃 고정 */
+        /* EH.jpg 양식 완벽 연동형 인쇄 레이아웃 */
         #teacherPrintArea { display: none; }
 
         @media print {
             body * { visibility: hidden; }
             .no-print { display: none !important; }
             
-            /* 학생 예약 확인증 인쇄 분기 */
+            /* 학생 예약 확인증 인쇄 스타일 */
             body.print-receipt #receiptModal, body.print-receipt #receiptModal * { visibility: visible; }
             body.print-receipt #receiptModal { position: absolute; left: 0; top: 0; width: 100%; background: white; display: flex !important; }
             
-            /* 선생님 시간표 인쇄 분기 */
+            /* 선생님 시간표 인쇄 스타일 (한글 이름 제외 버전) */
             body.print-teacher #teacherPrintArea, body.print-teacher #teacherPrintArea * { visibility: visible; }
             body.print-teacher #teacherPrintArea { 
                 display: block !important; 
@@ -73,7 +73,7 @@
                 text-align: center !important;
                 color: #000000 !important;
                 height: 45px !important;
-                font-family: sans-serif !important;
+                font-family: Arial, sans-serif !important;
             }
             .print-table th { font-weight: bold !important; background: transparent !important; }
         }
@@ -160,14 +160,14 @@
     </div>
 
     <div id="teacherPrintArea">
-        <div id="printTeacherName" style="font-size: 28px; font-weight: bold; text-align: center; font-family: sans-serif; text-decoration: underline; margin-bottom: 25px;"></div>
+        <div id="printTeacherName" style="font-size: 28px; font-weight: bold; text-align: left; font-family: sans-serif; margin-bottom: 25px;"></div>
         <table class="print-table">
             <thead>
                 <tr>
-                    <th style="width: 20%;">Time</th>
-                    <th style="width: 20%;">Level</th>
-                    <th style="width: 40%;">Name</th>
-                    <th style="width: 20%;">Check</th>
+                    <th style="width: 25%;">Time</th>
+                    <th style="width: 25%;">Level</th>
+                    <th style="width: 35%;">Name</th>
+                    <th style="width: 15%;">Check</th>
                 </tr>
             </thead>
             <tbody id="printTeacherTableBody"></tbody>
@@ -323,6 +323,7 @@
         
         function renderAdminTeachers() { 
             const list = document.getElementById('adminTeacherList'); 
+            if(!list) return;
             list.innerHTML = ''; 
             Object.keys(window.allTeachers).forEach(key => { 
                 const t = window.allTeachers[key]; 
@@ -330,7 +331,7 @@
                     <div class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm">
                         <div>
                             <div class="text-[10px] text-blue-600 font-bold">${t.dateRef}</div>
-                            <div class="font-black text-slate-800">${t.name} 선생님</div>
+                            <div class="font-black text-slate-800">${t.name}</div>
                             <div class="text-[9px] text-slate-400">${t.levels.join(', ')}</div>
                         </div>
                         <div class="flex gap-2 items-center">
@@ -383,7 +384,7 @@
             }); 
         }
 
-        // EH.jpg 데이터 연동형 인쇄 핸들러 핵심 모듈
+        // EH.pdf 양식 전용 인쇄 함수 (한글 이름 전면 제외 로직 반영)
         function printTeacherSchedule(dateRef, teacherName) {
             db.ref('appointments').once('value', snap => {
                 const appointments = snap.val() || {};
@@ -413,10 +414,13 @@
 
                     let level = matchedApp ? matchedApp.level : '';
                     let studentDisplay = '';
+                    
+                    // EH.pdf 요청 사항 반영: 인쇄물에는 "영어 이름"만 출력 (한글명 강제 누락)
                     if (matchedApp) {
-                        studentDisplay = matchedApp.krName;
-                        if (matchedApp.enName) {
-                            studentDisplay += ` (${matchedApp.enName})`;
+                        if (matchedApp.enName && matchedApp.enName.trim() !== '') {
+                            studentDisplay = matchedApp.enName;
+                        } else {
+                            studentDisplay = matchedApp.krName; // 영어 이름이 공란인 경우 시스템 예외 보정용
                         }
                     }
                     
@@ -431,13 +435,14 @@
                     curr.setMinutes(curr.getMinutes() + 10);
                 }
 
-                // 모달 및 바디 스타일 제어 분기 전환 후 딜레이 렌더링 검증 후 출력
+                // 인쇄 모드 클래스 설정 전환
                 document.body.classList.remove('print-receipt');
                 document.body.classList.add('print-teacher');
                 
+                // 데이터 바인딩 브라우저 동기화 완성 대기 후 인쇄 팝업 트리거
                 setTimeout(() => {
                     window.print();
-                }, 300);
+                }, 400);
             });
         }
 
