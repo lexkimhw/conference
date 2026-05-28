@@ -37,11 +37,9 @@
 
         .btn-disabled { opacity: 0.5; cursor: not-allowed !important; pointer-events: none !important; }
 
-        /* EH.pdf 양식 완벽 연동형 인쇄 레이아웃 */
         #teacherPrintArea { display: none; }
 
         @media print {
-            /* 2번째 장 빈 종이 출력 방지를 위한 브라우저 마진 최소화 및 높이 제어 */
             @page {
                 size: A4;
                 margin: 10mm 15mm 10mm 15mm;
@@ -54,11 +52,9 @@
             body * { visibility: hidden; }
             .no-print { display: none !important; }
             
-            /* 학생 예약 확인증 인쇄 스타일 */
             body.print-receipt #receiptModal, body.print-receipt #receiptModal * { visibility: visible; }
             body.print-receipt #receiptModal { position: absolute; left: 0; top: 0; width: 100%; background: white; display: flex !important; }
             
-            /* 선생님 시간표 인쇄 스타일 (빈 종이 출력 방지 패딩 조정 및 강제 1페이지 제한) */
             body.print-teacher #teacherPrintArea, body.print-teacher #teacherPrintArea * { visibility: visible; }
             body.print-teacher #teacherPrintArea { 
                 display: block !important; 
@@ -67,7 +63,7 @@
                 top: 0; 
                 width: 100%; 
                 background: white; 
-                padding: 10px 0 0 0 !important; /* 상단 여백 최소화 */
+                padding: 10px 0 0 0 !important;
                 box-sizing: border-box;
                 page-break-after: avoid;
                 page-break-inside: avoid;
@@ -80,7 +76,7 @@
             }
             .print-table th, .print-table td { 
                 border: 1px solid #000000 !important; 
-                padding: 10px 8px !important; /* 빈 종이 방지를 위해 셀 높이 소폭 최적화 */
+                padding: 10px 8px !important; 
                 font-size: 15px !important; 
                 text-align: center !important;
                 color: #000000 !important;
@@ -237,9 +233,20 @@
                             <button onclick="exportToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md">엑셀 다운로드</button>
                         </div>
                     </div>
-                    <div class="bg-white rounded-2xl border overflow-hidden">
-                        <table class="w-full text-[11px]" id="adminTable">
-                            <thead class="bg-slate-100 border-b"><tr><th class="p-3">회차</th><th class="p-3">레벨</th><th class="p-3">한글 이름</th><th class="p-3">영어 이름</th><th class="p-3">연락처</th><th class="p-3">선생님</th><th class="p-3">시간</th><th class="p-3">관리</th></tr></thead>
+                    <div class="bg-white rounded-2xl border overflow-x-auto">
+                        <table class="w-full text-[11px] table-fixed min-w-[800px]" id="adminTable">
+                            <thead class="bg-slate-100 border-b">
+                                <tr>
+                                    <th class="p-3 w-28">회차</th>
+                                    <th class="p-3 w-16">레벨</th>
+                                    <th class="p-3 w-24">한글 이름</th>
+                                    <th class="p-3 w-24">영어 이름</th>
+                                    <th class="p-3 w-32">연락처</th>
+                                    <th class="p-3 w-32">선생님</th>
+                                    <th class="p-3 w-24">시간</th>
+                                    <th class="p-3 w-32">관리</th>
+                                </tr>
+                            </thead>
                             <tbody id="adminBody" class="divide-y text-center"></tbody>
                         </table>
                     </div>
@@ -288,22 +295,30 @@
                 const mainList = document.getElementById('dateList');
                 const adminList = document.getElementById('adminDateList');
                 const selectBox = document.getElementById('newTeacherDateRef');
-                mainList.innerHTML = ''; adminList.innerHTML = ''; selectBox.innerHTML = '<option value="">회차 선택</option>';
+                if(mainList) mainList.innerHTML = ''; 
+                if(adminList) adminList.innerHTML = ''; 
+                if(selectBox) selectBox.innerHTML = '<option value="">회차 선택</option>';
                 
                 const dateKeys = Object.keys(dates);
                 
                 dateKeys.forEach(key => {
                     const d = dates[key];
-                    const btn = document.createElement('button');
-                    btn.className = "p-6 border-2 border-white rounded-3xl text-left bg-white shadow-sm transition-all";
-                    btn.innerHTML = `<div class="font-black text-slate-800 text-xl">${d.name}</div><div class="text-xs text-slate-500 font-bold">${d.desc}</div>`;
-                    btn.onclick = () => { selection.date = d.name; document.querySelectorAll('#dateList button').forEach(b => b.classList.remove('border-blue-900', 'bg-blue-50')); btn.classList.add('border-blue-900', 'bg-blue-50'); document.getElementById('step2Section').classList.remove('step-inactive'); checkStep2(); };
-                    mainList.appendChild(btn);
-                    adminList.innerHTML += `<div class="flex justify-between items-center bg-white p-3 border rounded-2xl"><div><b class="text-blue-900">${d.name}</b> <span class="text-xs text-slate-400">(${d.desc})</span></div><div class="flex gap-2"><button onclick="editDate('${key}', '${d.name}', '${d.desc}')" class="text-xs font-bold text-blue-500">수정</button><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/dates/${key}').remove()" class="text-xs font-bold text-red-500">삭제</button></div></div>`;
-                    selectBox.innerHTML += `<option value="${d.name}">${d.name}</option>`;
+                    if (mainList) {
+                        const btn = document.createElement('button');
+                        btn.className = "p-6 border-2 border-white rounded-3xl text-left bg-white shadow-sm transition-all";
+                        btn.innerHTML = `<div class="font-black text-slate-800 text-xl">${d.name}</div><div class="text-xs text-slate-500 font-bold">${d.desc}</div>`;
+                        btn.onclick = () => { selection.date = d.name; document.querySelectorAll('#dateList button').forEach(b => b.classList.remove('border-blue-900', 'bg-blue-50')); btn.classList.add('border-blue-900', 'bg-blue-50'); document.getElementById('step2Section').classList.remove('step-inactive'); checkStep2(); };
+                        mainList.appendChild(btn);
+                    }
+                    if (adminList) {
+                        adminList.innerHTML += `<div class="flex justify-between items-center bg-white p-3 border rounded-2xl"><div><b class="text-blue-900">${d.name}</b> <span class="text-xs text-slate-400">(${d.desc})</span></div><div class="flex gap-2"><button onclick="editDate('${key}', '${d.name}', '${d.desc}')" class="text-xs font-bold text-blue-500">수정</button><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('settings/dates/${key}').remove()" class="text-xs font-bold text-red-500">삭제</button></div></div>`;
+                    }
+                    if (selectBox) {
+                        selectBox.innerHTML += `<option value="${d.name}">${d.name}</option>`;
+                    }
                 });
 
-                if (dateKeys.length === 1) {
+                if (dateKeys.length === 1 && mainList) {
                     const singleKey = dateKeys[0];
                     const singleDate = dates[singleKey];
                     selection.date = singleDate.name;
@@ -315,7 +330,7 @@
                     checkStep2();
                 }
             });
-            db.ref('settings/teachers').on('value', snap => { window.allTeachers = snap.val() || {}; renderTeachers(); renderAdminTeachers(); renderTimeline(); });
+            db.ref('settings/teachers').on('value', snap => { window.allTeachers = snap.val() || {}; renderTeachers(); renderAdminTeachers(); renderTimeline(); refreshAdminTable(); });
             db.ref('appointments').on('value', () => { refreshAdminTable(); renderTimeline(); });
             setInterval(checkDeadlineStatus, 60000);
         }
@@ -324,7 +339,7 @@
         function formatEnglishName(target) { let val = target.value; if (val.length > 0) { target.value = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase(); } }
 
         function renderDeadline() { if (reservationDeadline) { const d = new Date(reservationDeadline); const dStr = `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')} ${d.getHours() >= 12 ? '오후' : '오전'} ${(d.getHours() % 12 || 12).toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`; document.getElementById('deadlineText').innerText = dStr + " 까지"; document.getElementById('deadlineDisplay').classList.remove('hidden'); document.getElementById('adminDeadlineInput').value = reservationDeadline; } }
-        function checkDeadlineStatus() { if (!reservationDeadline) return true; const now = new Date(); const deadline = new Date(reservationDeadline); const confirmBtn = document.getElementById('confirmBtn'); const editBtn = document.getElementById('editBtn'); if (now > deadline) { confirmBtn.innerText = "예약이 마감되었습니다"; confirmBtn.classList.add('btn-disabled', 'bg-slate-400'); confirmBtn.classList.remove('bg-blue-900'); if(editBtn) editBtn.classList.add('hidden'); return false; } else { confirmBtn.innerText = "저장 하기"; confirmBtn.classList.remove('btn-disabled', 'bg-slate-400'); confirmBtn.classList.add('bg-blue-900'); if(editBtn) editBtn.classList.remove('hidden'); return true; } }
+        function checkDeadlineStatus() { if (!reservationDeadline) return true; const now = new Date(); const deadline = new Date(reservationDeadline); const confirmBtn = document.getElementById('confirmBtn'); const editBtn = document.getElementById('editBtn'); if (now > deadline) { if(confirmBtn) { confirmBtn.innerText = "예약이 마감되었습니다"; confirmBtn.classList.add('btn-disabled', 'bg-slate-400'); confirmBtn.classList.remove('bg-blue-900'); } if(editBtn) editBtn.classList.add('hidden'); return false; } else { if(confirmBtn) { confirmBtn.innerText = "저장 하기"; confirmBtn.classList.remove('btn-disabled', 'bg-slate-400'); confirmBtn.classList.add('bg-blue-900'); } if(editBtn) editBtn.classList.remove('hidden'); return true; } }
         function updateDeadline() { const val = document.getElementById('adminDeadlineInput').value; if(!val) return alert("마감 시간을 선택해주세요."); db.ref('settings/deadline').set(val).then(() => alert("마감 시한이 업데이트되었습니다.")); }
         function updateNotice() { db.ref('settings/notice').set(document.getElementById('adminNoticeInput').value).then(() => alert("공지사항이 업데이트되었습니다.")); }
 
@@ -454,7 +469,166 @@
             });
         }
 
-        function refreshAdminTable() { const body = document.getElementById('adminBody'); if(!body) return; body.innerHTML = ''; db.ref('appointments').once('value', snap => { const data = snap.val() || {}; Object.keys(data).forEach(key => { const a = data[key]; if(a.items) { a.items.forEach(i => { body.innerHTML += `<tr><td class="p-3">${a.date}</td><td class="p-3">${a.level}</td><td class="p-3 font-black">${a.krName}</td><td class="p-3 text-slate-500">${a.enName || '-'}</td><td class="p-3">${a.parentPhone}</td><td class="p-3 text-blue-600 font-bold">${i.teacher}</td><td class="p-3 font-bold">${i.time}</td><td class="p-3"><button onclick="if(confirm('삭제하시겠습니까?')) db.ref('appointments/${key}').remove()" class="text-red-500 font-bold">삭제</button></td></tr>`; }); } }); }); }
+        // [신규 및 변경] 관리자 테이블 상세 예약 목록 갱신 및 실시간 인라인 에디터 기능
+        function refreshAdminTable() { 
+            const body = document.getElementById('adminBody'); 
+            if(!body) return; 
+            body.innerHTML = ''; 
+            
+            db.ref('appointments').once('value', snap => { 
+                const data = snap.val() || {}; 
+                Object.keys(data).forEach(key => { 
+                    const a = data[key]; 
+                    if(a.items && Array.isArray(a.items)) { 
+                        a.items.forEach((i, itemIdx) => { 
+                            const tr = document.createElement('tr');
+                            tr.id = `admin-row-${key}-${itemIdx}`;
+                            tr.className = "hover:bg-slate-50 transition-all";
+                            
+                            tr.innerHTML = `
+                                <td class="p-3 border-b text-slate-700 font-medium">${a.date}</td>
+                                <td class="p-3 border-b font-bold text-slate-800">${a.level}</td>
+                                <td class="p-3 border-b font-black text-slate-900">${a.krName}</td>
+                                <td class="p-3 border-b text-slate-600 font-medium">${a.enName || '-'}</td>
+                                <td class="p-3 border-b text-slate-500">${a.parentPhone}</td>
+                                <td class="p-3 border-b text-blue-600 font-extrabold">${i.teacher}</td>
+                                <td class="p-3 border-b font-bold text-slate-900">${i.time}</td>
+                                <td class="p-3 border-b">
+                                    <div class="flex justify-center gap-1.5">
+                                        <button onclick="switchToEditRow('${key}', ${itemIdx})" class="px-2 py-1 bg-slate-100 border text-blue-600 font-bold rounded-lg hover:bg-blue-50 transition-all text-[10px]">수정</button>
+                                        <button onclick="deleteSingleRowItem('${key}', ${itemIdx})" class="px-2 py-1 bg-slate-100 border text-red-500 font-bold rounded-lg hover:bg-red-50 transition-all text-[10px]">삭제</button>
+                                    </div>
+                                </td>
+                            `;
+                            body.appendChild(tr);
+                        }); 
+                    } 
+                }); 
+            }); 
+        }
+
+        // [신규] 특정 테이블 행을 수정 상태(입력 폼)로 전환하는 함수
+        function switchToEditRow(key, itemIdx) {
+            db.ref(`appointments/${key}`).once('value', snap => {
+                const a = snap.val();
+                if(!a || !a.items || !a.items[itemIdx]) return;
+                
+                const item = a.items[itemIdx];
+                const tr = document.getElementById(`admin-row-${key}-${itemIdx}`);
+                if(!tr) return;
+
+                // 실시간 기계식 시간 옵션 제네레이터
+                let timeOptionsHtml = '';
+                let tempTime = new Date();
+                tempTime.setHours(10, 10, 0, 0);
+                const limitTime = new Date();
+                limitTime.setHours(12, 50, 0, 0);
+                
+                while(tempTime <= limitTime) {
+                    const optionStr = tempTime.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+                    const isSelected = optionStr === item.time ? 'selected' : '';
+                    timeOptionsHtml += `<option value="${optionStr}" ${isSelected}>${optionStr}</option>`;
+                    tempTime.setMinutes(tempTime.getMinutes() + 10);
+                }
+
+                // 현재 회차 세션 내의 등록된 선생님 목록 드롭다운 빌드
+                let teacherOptionsHtml = '';
+                Object.values(window.allTeachers).forEach(t => {
+                    if(t.dateRef === a.date) {
+                        const isSelected = t.name === item.teacher ? 'selected' : '';
+                        teacherOptionsHtml += `<option value="${t.name}" ${isSelected}>${t.name}</option>`;
+                    }
+                });
+
+                // 테이블 행 레이아웃을 내부 인라인 폼으로 즉각 전환 처리
+                tr.className = "bg-amber-50/70 border-y-2 border-amber-300";
+                tr.innerHTML = `
+                    <td class="p-2 border-b"><span class="text-slate-400 text-xs font-bold">${a.date}</span></td>
+                    <td class="p-2 border-b"><input type="text" id="edit-row-level-${key}-${itemIdx}" value="${a.level}" class="w-full p-1 text-center border rounded uppercase font-bold text-xs outline-none focus:border-amber-500"></td>
+                    <td class="p-2 border-b"><input type="text" id="edit-row-kr-${key}-${itemIdx}" value="${a.krName}" class="w-full p-1 text-center border rounded font-bold text-xs outline-none focus:border-amber-500"></td>
+                    <td class="p-2 border-b"><input type="text" id="edit-row-en-${key}-${itemIdx}" value="${a.enName || ''}" class="w-full p-1 text-center border rounded font-medium text-xs outline-none focus:border-amber-500"></td>
+                    <td class="p-2 border-b"><input type="text" id="edit-row-phone-${key}-${itemIdx}" value="${a.parentPhone}" oninput="formatPhone(this)" class="w-full p-1 text-center border rounded text-xs outline-none focus:border-amber-500"></td>
+                    <td class="p-2 border-b"><select id="edit-row-teacher-${key}-${itemIdx}" class="w-full p-1 border rounded text-xs font-bold text-blue-600 outline-none focus:border-amber-500">${teacherOptionsHtml}</select></td>
+                    <td class="p-2 border-b"><select id="edit-row-time-${key}-${itemIdx}" class="w-full p-1 border rounded text-xs font-bold text-slate-800 outline-none focus:border-amber-500">${timeOptionsHtml}</select></td>
+                    <td class="p-2 border-b">
+                        <div class="flex justify-center gap-1">
+                            <button onclick="saveInlineRowItem('${key}', ${itemIdx})" class="px-2 py-1 bg-amber-600 text-white font-black rounded-lg hover:bg-amber-700 shadow-sm text-[10px]">저장</button>
+                            <button onclick="refreshAdminTable()" class="px-2 py-1 bg-white border text-slate-500 font-bold rounded-lg hover:bg-slate-100 text-[10px]">취소</button>
+                        </div>
+                    </td>
+                `;
+            });
+        }
+
+        // [신규] 인라인 수정 데이터 검증 및 연동 처리 함수
+        function saveInlineRowItem(key, itemIdx) {
+            const level = document.getElementById(`edit-row-level-${key}-${itemIdx}`).value.trim();
+            const krName = document.getElementById(`edit-row-kr-${key}-${itemIdx}`).value.trim();
+            const enName = document.getElementById(`edit-row-en-${key}-${itemIdx}`).value.trim();
+            const parentPhone = document.getElementById(`edit-row-phone-${key}-${itemIdx}`).value.trim();
+            const teacher = document.getElementById(`edit-row-teacher-${key}-${itemIdx}`).value;
+            const time = document.getElementById(`edit-row-time-${key}-${itemIdx}`).value;
+
+            if(!level || !krName || !parentPhone) {
+                return alert("레벨, 학생 한글 이름, 부모님 연락처는 필수 입력 사항입니다.");
+            }
+            if(!/^010-\d{4}-\d{4}$/.test(parentPhone)) {
+                return alert("올바른 휴대폰 번호 양식(010-XXXX-XXXX)이 아닙니다.");
+            }
+
+            db.ref(`appointments/${key}`).once('value', snap => {
+                let currentData = snap.val();
+                if(!currentData) return;
+
+                // 전체 학생 데이터 업데이트 사상 처리
+                currentData.level = level;
+                currentData.krName = krName;
+                currentData.enName = enName;
+                currentData.parentPhone = parentPhone;
+                
+                // 해당 인덱스 하위 스케줄 아이템 교체 개편
+                currentData.items[itemIdx].teacher = teacher;
+                currentData.items[itemIdx].time = time;
+
+                db.ref(`appointments/${key}`).set(currentData).then(() => {
+                    alert("예약 세부 정보가 성공적으로 변경되었습니다.");
+                    refreshAdminTable();
+                    renderTimeline();
+                }).catch(err => {
+                    console.error(err);
+                    alert("서버 통신 실패로 수정하지 못했습니다.");
+                });
+            });
+        }
+
+        // [신규] 개별 아이템 삭제 및 부모 노드 자동 가비지 컬렉션 처리 함수
+        function deleteSingleRowItem(key, itemIdx) {
+            if(!confirm("해당 상담 예약 일정을 정말로 삭제하시겠습니까?")) return;
+
+            db.ref(`appointments/${key}`).once('value', snap => {
+                let currentData = snap.val();
+                if(!currentData || !currentData.items) return;
+
+                // 하위 스케줄 배열 타겟 요소 정밀 축소 제거
+                currentData.items.splice(itemIdx, 1);
+
+                if(currentData.items.length === 0) {
+                    // 배정된 상담 타임라인이 전혀 없는 찌꺼기 계정 데이터는 자동 소멸 처리
+                    db.ref(`appointments/${key}`).remove().then(() => {
+                        alert("마지막 배정 일정이 삭제되어 전체 학생 예약 그룹이 초기화되었습니다.");
+                        refreshAdminTable();
+                        renderTimeline();
+                    });
+                } else {
+                    // 남은 스케줄 유지 처리 연동
+                    db.ref(`appointments/${key}`).set(currentData).then(() => {
+                        alert("해당 상담 일정이 정상적으로 삭제되었습니다.");
+                        refreshAdminTable();
+                        renderTimeline();
+                    });
+                }
+            });
+        }
 
         function checkStep2() {
             selection.level = document.getElementById('stuLevel').value.trim();
@@ -474,11 +648,11 @@
                     } else { document.getElementById('existingReservationArea').classList.add('hidden'); }
                 });
                 document.getElementById('step3Section').classList.remove('step-inactive');
-                if(window.innerWidth < 768) { document.getElementById('scrollGuide').classList.remove('hidden'); }
+                if(window.innerWidth < 768) { const guide = document.getElementById('scrollGuide'); if(guide) guide.classList.remove('hidden'); }
                 renderTeachers();
             } else {
                 document.getElementById('step3Section').classList.add('step-inactive');
-                document.getElementById('scrollGuide').classList.add('hidden');
+                const guide = document.getElementById('scrollGuide'); if(guide) guide.classList.add('hidden');
             }
             updateSummary();
         }
@@ -571,7 +745,10 @@
         }
 
         function updateSummary() { 
-            document.getElementById('selectionSummary').innerText = selection.items.length > 0 ? `${selection.level} | ${selection.krName} 학생 | ${selection.items.map(i=>`${i.teacher}(${i.time})`).join(', ')}` : "상담 시간을 선택해 주세요."; 
+            const summary = document.getElementById('selectionSummary');
+            if(summary) {
+                summary.innerText = selection.items.length > 0 ? `${selection.level} | ${selection.krName} 학생 | ${selection.items.map(i=>`${i.teacher}(${i.time})`).join(', ')}` : "상담 시간을 선택해 주세요."; 
+            }
         }
 
         function submitReservation() { 
@@ -654,7 +831,7 @@
             setTimeout(() => { window.print(); }, 150);
         }
         
-        function openAdmin() { const input = prompt("관리자 비밀번호를 입력하세요."); if (!input) return; db.ref('settings/adminPw').once('value', snap => { const savedPw = snap.val(); if (savedPw && input === savedPw.toString()) { document.getElementById('adminModal').classList.remove('hidden'); } else { alert("비밀번호가 일치하지 않습니다."); } }).catch(err => { console.error("암호 불러오기 실패:", err); alert("관리자 인증 중 오류가 발생했습니다."); }); }
+        function openAdmin() { const input = prompt("관리자 비밀번호를 입력하세요."); if (!input) return; db.ref('settings/adminPw').once('value', snap => { const savedPw = snap.val(); if (savedPw && input === savedPw.toString()) { document.getElementById('adminModal').classList.remove('hidden'); refreshAdminTable(); } else { alert("비밀번호가 일치하지 않습니다."); } }).catch(err => { console.error("암호 불러오기 실패:", err); alert("관리자 인증 중 오류가 발생했습니다."); }); }
         function closeAdmin() { document.getElementById('adminModal').classList.add('hidden'); }
         function resetAll() { if(confirm("초기화하시겠습니까?")) location.reload(); }
         function exportToExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('adminTable')), "LEXKIM_RESERVATION.xlsx"); }
