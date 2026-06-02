@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -94,7 +93,7 @@
         <h1 class="text-xl font-black tracking-tighter">렉스김어학원 간담회</h1>
         <div class="flex gap-2">
             <button onclick="resetAll()" class="text-[10px] font-bold bg-red-500 px-3 py-1.5 rounded-full text-white">초기화</button>
-            <button onclick="openLoginModal()" class="text-[10px] font-bold bg-white/10 px-3 py-1.5 rounded-full text-white">관리자</button>
+            <button onclick="openAdmin()" class="text-[10px] font-bold bg-white/10 px-3 py-1.5 rounded-full text-white">관리자</button>
         </div>
     </header>
 
@@ -183,29 +182,6 @@
         </table>
     </div>
 
-    <div id="loginModal" class="fixed inset-0 bg-slate-900/80 hidden z-[110] flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border border-slate-100">
-            <div class="text-center mb-6">
-                <h3 class="text-xl font-black text-blue-900 italic">ADMIN LOGIN</h3>
-                <p class="text-xs text-slate-400 mt-1">이메일 계정으로 통합 인증을 진행해 주세요.</p>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">관리자 이메일</label>
-                    <input type="email" id="loginEmail" value="lexkimhw@gmail.com" class="w-full p-3 border rounded-xl outline-none focus:border-blue-900 font-medium text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">비밀번호</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" class="w-full p-3 border rounded-xl outline-none focus:border-blue-900 font-medium text-sm">
-                </div>
-                <div class="flex gap-2 pt-2">
-                    <button onclick="closeLoginModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl font-bold text-xs hover:bg-slate-300">취소</button>
-                    <button onclick="handleAdminLogin()" class="flex-1 bg-blue-900 text-white py-3 rounded-xl font-black text-xs hover:bg-blue-800 shadow-md">로그인</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div id="adminModal" class="fixed inset-0 bg-slate-900/90 hidden z-[100] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-6xl h-[90vh] rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl">
             <div class="p-6 border-b flex justify-between items-center bg-slate-50">
@@ -292,8 +268,6 @@
         const firebaseConfig = { databaseURL: "https://lexkimhw-63c3b-default-rtdb.asia-southeast1.firebasedatabase.app/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        // ⭐ Auth 객체 단축 변수 정의
-        const auth = firebase.auth();
 
         let selection = { date: '', level: '', krName: '', enName: '', parentPhone: '', items: [] };
         let existingKey = null;
@@ -358,17 +332,6 @@
             });
             db.ref('settings/teachers').on('value', snap => { window.allTeachers = snap.val() || {}; renderTeachers(); renderAdminTeachers(); renderTimeline(); refreshAdminTable(); });
             db.ref('appointments').on('value', () => { refreshAdminTable(); renderTimeline(); });
-            
-            // ⭐ [신규 반영] Firebase 로그인 상태 감지 리스너 연동
-            auth.onAuthStateChanged(user => {
-                if (user && user.email === 'lexkimhw@gmail.com') {
-                    document.getElementById('adminModal').classList.remove('hidden');
-                    refreshAdminTable();
-                } else {
-                    document.getElementById('adminModal').classList.add('hidden');
-                }
-            });
-
             setInterval(checkDeadlineStatus, 60000);
         }
 
@@ -506,6 +469,7 @@
             });
         }
 
+        // [신규 및 변경] 관리자 테이블 상세 예약 목록 갱신 및 실시간 인라인 에디터 기능
         function refreshAdminTable() { 
             const body = document.getElementById('adminBody'); 
             if(!body) return; 
@@ -543,6 +507,7 @@
             }); 
         }
 
+        // [신규] 특정 테이블 행을 수정 상태(입력 폼)로 전환하는 함수
         function switchToEditRow(key, itemIdx) {
             db.ref(`appointments/${key}`).once('value', snap => {
                 const a = snap.val();
@@ -552,6 +517,7 @@
                 const tr = document.getElementById(`admin-row-${key}-${itemIdx}`);
                 if(!tr) return;
 
+                // 실시간 기계식 시간 옵션 제네레이터
                 let timeOptionsHtml = '';
                 let tempTime = new Date();
                 tempTime.setHours(10, 10, 0, 0);
@@ -565,6 +531,7 @@
                     tempTime.setMinutes(tempTime.getMinutes() + 10);
                 }
 
+                // 현재 회차 세션 내의 등록된 선생님 목록 드롭다운 빌드
                 let teacherOptionsHtml = '';
                 Object.values(window.allTeachers).forEach(t => {
                     if(t.dateRef === a.date) {
@@ -573,6 +540,7 @@
                     }
                 });
 
+                // 테이블 행 레이아웃을 내부 인라인 폼으로 즉각 전환 처리
                 tr.className = "bg-amber-50/70 border-y-2 border-amber-300";
                 tr.innerHTML = `
                     <td class="p-2 border-b"><span class="text-slate-400 text-xs font-bold">${a.date}</span></td>
@@ -592,6 +560,7 @@
             });
         }
 
+        // [신규] 인라인 수정 데이터 검증 및 연동 처리 함수
         function saveInlineRowItem(key, itemIdx) {
             const level = document.getElementById(`edit-row-level-${key}-${itemIdx}`).value.trim();
             const krName = document.getElementById(`edit-row-kr-${key}-${itemIdx}`).value.trim();
@@ -611,11 +580,13 @@
                 let currentData = snap.val();
                 if(!currentData) return;
 
+                // 전체 학생 데이터 업데이트 사상 처리
                 currentData.level = level;
                 currentData.krName = krName;
                 currentData.enName = enName;
                 currentData.parentPhone = parentPhone;
                 
+                // 해당 인덱스 하위 스케줄 아이템 교체 개편
                 currentData.items[itemIdx].teacher = teacher;
                 currentData.items[itemIdx].time = time;
 
@@ -630,6 +601,7 @@
             });
         }
 
+        // [신규] 개별 아이템 삭제 및 부모 노드 자동 가비지 컬렉션 처리 함수
         function deleteSingleRowItem(key, itemIdx) {
             if(!confirm("해당 상담 예약 일정을 정말로 삭제하시겠습니까?")) return;
 
@@ -637,15 +609,18 @@
                 let currentData = snap.val();
                 if(!currentData || !currentData.items) return;
 
+                // 하위 스케줄 배열 타겟 요소 정밀 축소 제거
                 currentData.items.splice(itemIdx, 1);
 
                 if(currentData.items.length === 0) {
+                    // 배정된 상담 타임라인이 전혀 없는 찌꺼기 계정 데이터는 자동 소멸 처리
                     db.ref(`appointments/${key}`).remove().then(() => {
                         alert("마지막 배정 일정이 삭제되어 전체 학생 예약 그룹이 초기화되었습니다.");
                         refreshAdminTable();
                         renderTimeline();
                     });
                 } else {
+                    // 남은 스케줄 유지 처리 연동
                     db.ref(`appointments/${key}`).set(currentData).then(() => {
                         alert("해당 상담 일정이 정상적으로 삭제되었습니다.");
                         refreshAdminTable();
@@ -724,7 +699,7 @@
             }
 
             const regularTeacherCount = selection.items.filter(i => !i.teacher.includes('원장님')).length;
-            if (!teacher.name.includes('원장님' || '부원장님') && regularTeacherCount >= 2) { 
+            if (!teacher.name.includes('원장님') && regularTeacherCount >= 2) { 
                 alert("일반 선생님은 최대 2명까지만 예약 가능합니다. (원장님 상담은 제한 인원에 포함되지 않습니다.)"); 
                 return; 
             }
@@ -856,49 +831,8 @@
             setTimeout(() => { window.print(); }, 150);
         }
         
-        // ⭐ [신규 반영] 로그인 모달 호출 함수
-        function openLoginModal() {
-            const user = auth.currentUser;
-            if (user && user.email === 'lexkimhw@gmail.com') {
-                document.getElementById('adminModal').classList.remove('hidden');
-                refreshAdminTable();
-            } else {
-                document.getElementById('loginModal').classList.remove('hidden');
-            }
-        }
-
-        // ⭐ [신규 반영] 로그인 모달 닫기
-        function closeLoginModal() {
-            document.getElementById('loginModal').classList.add('hidden');
-            document.getElementById('loginPassword').value = '';
-        }
-
-        // ⭐ [신규 반영] Firebase Auth 기반 로그인 처리 로직
-        function handleAdminLogin() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-
-            if(!password) return alert("비밀번호를 입력하세요.");
-
-            auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    closeLoginModal();
-                    document.getElementById('adminModal').classList.remove('hidden');
-                    refreshAdminTable();
-                })
-                .catch((error) => {
-                    console.error("로그인 실패:", error);
-                    alert("인증에 실패했습니다. 이메일 또는 비밀번호를 다시 확인하세요.");
-                });
-        }
-
-        // ⭐ [신규 반영] 창을 닫을 때 자동으로 안전 로그아웃 수행
-        function closeAdmin() { 
-            auth.signOut().then(() => {
-                document.getElementById('adminModal').classList.add('hidden');
-            });
-        }
-
+        function openAdmin() { const input = prompt("관리자 비밀번호를 입력하세요."); if (!input) return; db.ref('settings/adminPw').once('value', snap => { const savedPw = snap.val(); if (savedPw && input === savedPw.toString()) { document.getElementById('adminModal').classList.remove('hidden'); refreshAdminTable(); } else { alert("비밀번호가 일치하지 않습니다."); } }).catch(err => { console.error("암호 불러오기 실패:", err); alert("관리자 인증 중 오류가 발생했습니다."); }); }
+        function closeAdmin() { document.getElementById('adminModal').classList.add('hidden'); }
         function resetAll() { if(confirm("초기화하시겠습니까?")) location.reload(); }
         function exportToExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('adminTable')), "LEXKIM_RESERVATION.xlsx"); }
 
